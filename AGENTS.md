@@ -160,5 +160,16 @@ When working on specific features, refer to the authoritative documentation file
 - **Zero-Leak Invariant**: Every commit on public branches (`public-release`, `main`) must pass leak checks (`git grep` for credentials, private IPs, and API tokens). Never check in `.env*` files (only `.env.example`).
 - **Semantic Versioning & Auto-Update Invariant**: Any version increment must be synchronized via `npm run bump:patch` (or `minor`/`major`) across `package.json`, `tauri.conf.json`, `Cargo.toml`, and `build.gradle.kts`. When tagged `v*.*.*` or dispatched, GitHub Actions builds all 4 platforms (Windows, Android, macOS, Linux) and generates `latest.json` for in-app desktop auto-updates.
 
+## 22. Platform-Targeted Feature Gating & Independence Invariant (Desktop vs Web vs Android)
+- **Three Isolated Platform Targets**:
+  1. **Desktop Native (Windows / macOS / Linux via Tauri)**: Heavy clinical workstation, local standalone Next.js runtime, offline-first SQLite WAL (`radsuite.db`), local background PACS/DIMSE, desktop auto-updates (`latest.json`), and multi-monitor windowing.
+  2. **Web / Cloud VPS (`radiology.sehatai.org`)**: Multi-tenant cloud access, central PostgreSQL/SQLite cloud store, REST APIs, remote DICOM streaming, and HMIS sync gateway.
+  3. **Android / Mobile (Tauri / Mobile Webview)**: Touch-first UI, camera QR accession scanning, mobile dictation, floating action buttons (FAB), bottom-sheet navigation, and lightweight webview bootstrap.
+- **Strict Decoupling & Zero Cross-Platform Regressions**:
+  - **No Global Collateral Damage**: Adding, modifying, or removing a feature for the Web version must **NEVER** break or alter Desktop or Mobile behavior, and vice versa.
+  - **Centralized Platform Detection**: All platform conditional checks MUST route through standard runtime helpers (`src/lib/platform.ts` / `usePlatform()` / `isDesktopApp()` / `useIsMobile()`). Never scatter raw or fragile user-agent sniffing across feature components.
+  - **Component Level Isolation**: If a feature requires platform-specific behavior (e.g. reporting layout, navigation dock, or update banner), extract dedicated sub-components (e.g. `<DesktopUpdateBanner />`, `<ZenReportingFab />`) guarded by platform checks rather than deeply nesting conflicting branching logic in shared core primitives.
+
+
 
 
