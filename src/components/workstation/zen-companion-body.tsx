@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ZenDicomViewer } from './zen-dicom-viewer';
+import { ZenDicomViewportContainer } from './zen-dicom-viewport-container';
 import { ZenInsightsDdxTab } from './zen-insights-ddx-tab';
 import { CopilotChatTab } from './copilot-chat-tab';
 import { ZenRadiopaediaPane } from './zen-radiopaedia-pane';
@@ -27,8 +27,10 @@ export interface ZenCompanionBodyProps {
   isLocalCase?: boolean;
   localCaseId?: string;
   localSeries?: any[];
+  seriesList?: any[];
   activeSeriesIndex?: number;
   onSelectSeries?: (idx: number) => void;
+  onSwapCenter?: () => void;
   report?: ReportEditorState;
   setReport?: React.Dispatch<React.SetStateAction<ReportEditorState>>;
   studyId?: string;
@@ -78,8 +80,10 @@ export function ZenCompanionBody({
   isLocalCase,
   localCaseId,
   localSeries = [],
+  seriesList = [],
   activeSeriesIndex = 0,
   onSelectSeries,
+  onSwapCenter,
   report,
   setReport,
   studyId = '',
@@ -137,13 +141,17 @@ export function ZenCompanionBody({
           onDrop={handleSeriesDrop}
           className={cn('flex-1 relative bg-black overflow-hidden flex flex-col', isDragOverSeries && 'ring-4 ring-primary ring-inset')}
         >
-          <ZenDicomViewer
+          <ZenDicomViewportContainer
             accessionNumber={accessionNumber}
             modality={modality}
             isLocalCase={isLocalCase}
             localCaseId={localCaseId}
             localSeries={localSeries}
+            seriesList={seriesList}
             activeSeriesIndex={activeSeriesIndex}
+            onSelectSeries={onSelectSeries}
+            onSwapCenter={onSwapCenter}
+            isCompanion={true}
           />
           {isDragOverSeries && (
             <div className="absolute inset-0 z-40 bg-primary/20 backdrop-blur-xs flex items-center justify-center pointer-events-none">

@@ -23,6 +23,10 @@ interface StitchGridPaneProps {
   preset?: string;
   invert?: boolean;
   resetKey?: number;
+  isLinked?: boolean;
+  onToggleLink?: (paneIdx: number) => void;
+  onSnapshot?: (paneIdx: number) => void;
+  onClosePane?: (paneIdx: number) => void;
   onClick: (idx: number) => void;
   onDoubleClick: (idx: number) => void;
   onDragOver: (idx: number, e: React.DragEvent) => void;
@@ -54,6 +58,10 @@ export function StitchGridPane({
   preset = 'soft',
   invert = false,
   resetKey,
+  isLinked = true,
+  onToggleLink,
+  onSnapshot,
+  onClosePane,
   onClick,
   onDoubleClick,
   onDragOver,
@@ -121,33 +129,47 @@ export function StitchGridPane({
           : 'border-outline-variant/40 hover:border-outline'
       } ${isDragOver ? 'ring-4 ring-primary border-primary' : ''}`}
     >
-      <ZenDicomViewer
-        accessionNumber={accessionNumber}
-        modality={modality}
-        isLocalCase={isLocalCase}
-        localCaseId={localCaseId}
-        localSeries={assignedSeries}
-        activeSeriesIndex={0}
-        tool={tool}
-        preset={preset}
-        invert={invert}
-        resetKey={resetKey}
-        externalSlice={externalSlice}
-        scoutLines={paneScoutLines}
-        active3DPoint={active3DPoint}
-        onPoint3DSelect={onPoint3DSelect}
-        isCrosshairVisible={isCrosshairVisible}
-        onClear3DPoint={onClear3DPoint}
-        onSelectScoutSlice={onSelectScoutSlice}
-        onGeometryUpdate={handleGeomUpdate}
-        onSliceChange={handlePaneSliceChange}
-      />
+      {assignedSeries.length > 0 ? (
+        <ZenDicomViewer
+          accessionNumber={accessionNumber}
+          modality={modality}
+          isLocalCase={isLocalCase}
+          localCaseId={localCaseId}
+          localSeries={assignedSeries}
+          activeSeriesIndex={0}
+          tool={tool}
+          preset={preset}
+          invert={invert}
+          resetKey={resetKey}
+          externalSlice={externalSlice}
+          scoutLines={paneScoutLines}
+          active3DPoint={active3DPoint}
+          onPoint3DSelect={onPoint3DSelect}
+          isCrosshairVisible={isCrosshairVisible}
+          onClear3DPoint={onClear3DPoint}
+          onSelectScoutSlice={onSelectScoutSlice}
+          onGeometryUpdate={handleGeomUpdate}
+          onSliceChange={handlePaneSliceChange}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-black/90 text-muted-foreground select-none p-4 text-center">
+          <span className="text-xs font-mono font-bold mb-1 text-muted-foreground/80">Viewport {idx + 1} Empty</span>
+          <span className="text-[10px] text-muted-foreground/50">Drag a sequence from the left rail here</span>
+        </div>
+      )}
 
+      {/* Vitrea MMV Pane Header Mini-Toolbar (Link/Unlink, Snapshot, Maximize, Close) */}
       <StitchGridOverlay
+        paneIdx={idx}
         paneLabel={`P${idx + 1}`}
         isActive={isActive}
         isDragOver={isDragOver}
         totalPanes={totalPanes}
+        isLinked={isLinked}
+        onToggleLink={onToggleLink}
+        onSnapshot={onSnapshot}
+        onClose={onClosePane}
+        onMaximize={onDoubleClick}
       />
     </div>
   );

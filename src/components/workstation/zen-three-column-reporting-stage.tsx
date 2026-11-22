@@ -2,15 +2,13 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useThreeColumnLayout } from '@/hooks/use-three-column-layout';
-import { ZenSeriesColumn } from './zen-series-column';
 import { ZenColumnDivider } from './zen-column-divider';
 import { ZenReportCanvas } from './zen-report-canvas';
-import { ZenDicomViewer } from './zen-dicom-viewer';
+import { ZenDicomViewportContainer } from './zen-dicom-viewport-container';
 import { ZenCompanionPanel } from './zen-companion-panel';
 import { ZenCompanionSlimRail } from './zen-companion-slim-rail';
 import { ZenCompanionPipFab } from './zen-companion-pip-fab';
 import { ZenMobileTabs, ZenMobileView } from './zen-mobile-tabs';
-import { ArrowLeftRight, Maximize2, Minimize2 } from 'lucide-react';
 import { CompanionTab, CompanionWindowMode } from '@/services/companion-tab.service';
 import { ZenThreeColumnReportingStageProps } from './zen-three-column-stage.types';
 
@@ -28,13 +26,12 @@ export function ZenThreeColumnReportingStage({
   rightColTab: propRightTab, onSelectRightColTab: propSetRightTab,
 }: ZenThreeColumnReportingStageProps) {
   const {
-    leftColWidth, isLeftCollapsed, toggleLeftCollapsed,
     rightColWidth, setRightColWidth, isRightCollapsed,
     setIsRightCollapsed, toggleRightCollapsed,
     rightColTab: hookRightColTab, setRightColTab: hookSetRightColTab,
     centerView: hookCenterView, toggleCenterView: hookToggleCenterView,
     isStageMaximized: hookIsMaximized, toggleStageMaximize: hookToggleMax,
-    isDraggingDivider, startLeftResize, startRightResize,
+    isDraggingDivider, startRightResize,
   } = useThreeColumnLayout();
 
   const centerView = propCenterView ?? hookCenterView;
@@ -79,7 +76,7 @@ export function ZenThreeColumnReportingStage({
     patientAge: patient?.age || study?.age, patientGender: patient?.gender || study?.gender,
     patientMrn: patient?.mrNumber || patient?.mrn || study?.patientMrn || study?.patientId,
     studyDescription: study?.studyDescription, pgrName, modality, isLocalCase, localCaseId,
-    localSeries, activeSeriesIndex, onSelectSeries, seriesName: activeSeries?.seriesDescription,
+    localSeries, seriesList, activeSeriesIndex, onSelectSeries, seriesName: activeSeries?.seriesDescription,
     report, setReport, studyId: study?.id, reportId: (report as any)?.id,
     onSaveReport: onSave, syncStatus, savedTime,
     findings: report.findings, impression: report.impression,
@@ -94,100 +91,42 @@ export function ZenThreeColumnReportingStage({
 
   return (
     <div className={`flex-1 relative flex h-full bg-surface-container-lowest overflow-hidden ${isMaximized ? 'fixed inset-0 z-50 bg-background' : ''}`}>
-      {/* Column 1 (Left): Series Rail */}
-      {!isMaximized && seriesList.length > 0 && (
-        <>
-          <div className="hidden md:flex h-full">
-            <ZenSeriesColumn
-              seriesList={seriesList} activeSeriesIndex={activeSeriesIndex}
-              onSelectSeries={onSelectSeries} isCollapsed={isLeftCollapsed}
-              onToggleCollapse={toggleLeftCollapsed} width={leftColWidth}
-              modality={modality} isLocalCase={isLocalCase}
-              localCaseId={localCaseId} invert={invert}
-            />
-          </div>
-          {!isLeftCollapsed && (
-            <div className="hidden md:flex h-full">
-              <ZenColumnDivider
-                onMouseDown={startLeftResize}
-                isDragging={isDraggingDivider === 'left'}
-                title="Drag to resize Series Rail"
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Column 2 (Center): Clinical Report Canvas OR Interactive DICOM Viewport */}
+      {/* Center Stage: Clinical Report Canvas OR Unified DICOM Viewport */}
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative">
         {centerView === 'images' ? (
-          <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative bg-black">
-            <div className="h-9 px-3 bg-surface-container/95 border-b border-outline-variant/60 flex items-center justify-between text-xs text-foreground shrink-0 select-none">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-bold text-primary flex items-center gap-1.5 text-xs">
-                  <span>Interactive DICOM Viewport</span>
-                </span>
-                <span className="text-secondary text-[11px] font-mono truncate hidden sm:inline">
-                  {activeSeries?.seriesDescription || `Series #${activeSeriesIndex + 1}`} ({activeSeries?.sliceCount || 0} slices)
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={toggleCenter}
-                className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-surface-container-high hover:bg-surface-container-highest text-foreground flex items-center gap-1.5 transition-colors cursor-pointer border border-outline-variant/60 shadow-2xs"
-                title="Swap Report Editor back to Center Stage"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />
-                <span>Swap to Report</span>
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 relative">
-              <ZenDicomViewer
-                accessionNumber={study?.accessionNumber}
-                modality={modality}
-                isLocalCase={isLocalCase}
-                localCaseId={localCaseId}
-                localSeries={localSeries}
-                activeSeriesIndex={activeSeriesIndex}
-              />
-            </div>
-          </div>
+          <ZenDicomViewportContainer
+            accessionNumber={study?.accessionNumber}
+            modality={modality}
+            isLocalCase={isLocalCase}
+            localCaseId={localCaseId}
+            localSeries={localSeries}
+            seriesList={seriesList}
+            activeSeriesIndex={activeSeriesIndex}
+            onSelectSeries={onSelectSeries}
+            onSwapCenter={toggleCenter}
+            isCompanion={false}
+          />
         ) : (
           <div className={`flex-1 min-w-0 h-full flex flex-col overflow-hidden ${mobileView !== 'report' ? 'hidden md:flex' : 'flex'}`}>
             <ZenReportCanvas
               report={report} setReport={setReport} studyId={study.id} modality={modality}
-              patientName={patient?.fullName || study?.patientName}
-              patientAge={patient?.age || study?.age}
-              patientGender={patient?.gender || study?.gender}
-              patientMrn={patient?.mrNumber || patient?.mrn || study?.patientMrn || study?.patientId}
-              accessionNumber={study?.accessionNumber}
-              studyDescription={study?.studyDescription}
+              patientName={patient?.fullName || study?.patientName} patientAge={patient?.age || study?.age}
+              patientGender={patient?.gender || study?.gender} patientMrn={patient?.mrNumber || patient?.mrn || study?.patientMrn || study?.patientId}
+              accessionNumber={study?.accessionNumber} studyDescription={study?.studyDescription}
               pgrName={pgrName} onPgrNameChange={onPgrNameChange}
               consultantName={consultantName} onConsultantNameChange={onConsultantNameChange}
               reportingMode={reportingMode} scrollMode="unified"
-              onSelectReportingMode={onSelectReportingMode}
-              onOpenCommandPalette={onOpenCommandPalette}
+              onSelectReportingMode={onSelectReportingMode} onOpenCommandPalette={onOpenCommandPalette}
               onStructure={onStructure} structuring={structuring}
-              onMaximizeNotion={() => onSelectReportingMode('split')}
-              onMinimizeToFab={() => onSelectReportingMode('fab')}
-              onPopOutModal={() => onSelectReportingMode('modal')}
-              onSave={onSave} syncStatus={syncStatus} savedTime={savedTime}
-              onSendToHmis={onSendToHmis} sendingHmis={sendingHmis}
-              onSubmitToHmis={onSubmitToHmis} submittingHmis={submittingHmis}
-              isFinalSubmitAllowed={isFinalSubmitAllowed}
-              onRevertHmis={onRevertHmis} revertingHmis={revertingHmis}
-              hmisNotice={hmisNotice} isTakenUpByMe={isTakenUpByMe}
-              isClaimedByOther={isClaimedByOther} claimedByName={claimedByName}
-              onClaimCase={onClaimCase} claimingCase={claimingCase}
-              isCompanionOpen={companionMode === 'docked' && isRightOpen}
-              onToggleCompanion={() => {
-                if (companionMode !== 'docked') setCompanionMode('docked');
-                toggleRight();
-              }}
-              onOpenCompanionTab={handleOpenCompanionTab}
-              onOpenInsights={() => handleOpenCompanionTab('insights_ddx')}
-              onEditPatient={onEditPatient}
-              currentVersion={currentVersion} onVersionChange={onVersionChange}
+              onMaximizeNotion={() => onSelectReportingMode('split')} onMinimizeToFab={() => onSelectReportingMode('fab')}
+              onPopOutModal={() => onSelectReportingMode('modal')} onSave={onSave} syncStatus={syncStatus} savedTime={savedTime}
+              onSendToHmis={onSendToHmis} sendingHmis={sendingHmis} onSubmitToHmis={onSubmitToHmis} submittingHmis={submittingHmis}
+              isFinalSubmitAllowed={isFinalSubmitAllowed} onRevertHmis={onRevertHmis} revertingHmis={revertingHmis}
+              hmisNotice={hmisNotice} isTakenUpByMe={isTakenUpByMe} isClaimedByOther={isClaimedByOther} claimedByName={claimedByName}
+              onClaimCase={onClaimCase} claimingCase={claimingCase} isCompanionOpen={companionMode === 'docked' && isRightOpen}
+              onToggleCompanion={() => { if (companionMode !== 'docked') setCompanionMode('docked'); toggleRight(); }}
+              onOpenCompanionTab={handleOpenCompanionTab} onOpenInsights={() => handleOpenCompanionTab('insights_ddx')}
+              onEditPatient={onEditPatient} currentVersion={currentVersion} onVersionChange={onVersionChange}
             />
           </div>
         )}

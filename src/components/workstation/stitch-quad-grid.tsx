@@ -15,6 +15,7 @@ interface StitchQuadGridProps {
   isLocalCase?: boolean;
   localCaseId?: string;
   localSeries?: any[];
+  seriesList?: any[];
   tool?: DicomTool;
   preset?: string;
   syncScroll?: boolean;
@@ -32,7 +33,7 @@ interface StitchQuadGridProps {
 
 export function StitchQuadGrid(props: StitchQuadGridProps) {
   const {
-    accessionNumber, modality, isLocalCase = false, localCaseId, localSeries = [],
+    accessionNumber, modality, isLocalCase = false, localCaseId, localSeries = [], seriesList = [],
     tool = 'pan', preset = 'soft', syncScroll = true, scoutLinesActive = true, invert = false,
     resetKey, rows = 2, cols = 2, activeSeriesIndex = 0, seriesSelectToken = 0, onActiveSeriesChange,
     paneSeriesMap: propPaneSeriesMap, onUpdatePaneSeries,
@@ -43,10 +44,18 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   const [panesGeometry, setPanesGeometry] = useState<Record<number, SliceGeometry>>({});
   const [dragOverPaneIndex, setDragOverPaneIndex] = useState<number | null>(null);
   const [maximizedPaneIndex, setMaximizedPaneIndex] = useState<number | null>(null);
+  const [unlinkedPanes, setUnlinkedPanes] = useState<Set<number>>(new Set());
+
   const r = Math.max(1, Math.min(5, rows || 2));
   const c = Math.max(1, Math.min(5, cols || 2));
   const totalPanes = r * c;
   const lastHandledTokenRef = useRef(seriesSelectToken);
+
+  const availableSeries = (localSeries && localSeries.length > 0)
+    ? localSeries
+    : (seriesList && seriesList.length > 0)
+      ? seriesList
+      : [];
 
   useEffect(() => {
     if (seriesSelectToken > lastHandledTokenRef.current && activeSeriesIndex !== undefined) {
@@ -58,12 +67,13 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
 
   const getAssignedSeries = useCallback(
     (paneIdx: number) => {
-      if (!isLocalCase || localSeries.length === 0) return [];
-      const mappedIdx = paneSeriesMap[paneIdx] ?? (paneIdx % localSeries.length);
-      const validIdx = Math.max(0, Math.min(localSeries.length - 1, mappedIdx));
-      return [localSeries[validIdx]];
+      if (availableSeries.length === 0) return [];
+      const mappedIdx = paneSeriesMap[paneIdx] ?? (paneIdx % availableSeries.length);
+      if (mappedIdx === -1) return []; // -1 indicates cleared/closed pane
+      const validIdx = Math.max(0, Math.min(availableSeries.length - 1, mappedIdx));
+      return [availableSeries[validIdx]];
     },
-    [isLocalCase, localSeries, paneSeriesMap]
+    [availableSeries, paneSeriesMap]
   );
 
   const getPaneOrientation = useCallback(
@@ -83,48 +93,76 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   });
 
   const {
-    active3DPoint,
-    isCrosshairVisible,
-    handlePoint3DSelect,
-    clear3DPoint,
-    toggleCrosshairVisibility,
+    active3DPoint, isCrosshairVisible, handlePoint3DSelect, clear3DPoint, toggleCrosshairVisibility,
   } = useGrid3DNavigation({
-    totalPanes,
-    getAssignedSeries,
-    jumpPanesToSlices,
-    maximizedPaneIndex,
+    totalPanes, getAssignedSeries, jumpPanesToSlices, maximizedPaneIndex,
     onClearMaximized: () => setMaximizedPaneIndex(null),
   });
+
+  const handleToggleLink = useCallback((paneIdx: number) => {
+    setUnlinkedPanes((prev) => {
+      const next = new Set(prev);
+      if (next.has(paneIdx)) next.delete(paneIdx);
+      else next.add(paneIdx);
+      return next;
+    });
+  }, []);
+
+  const handleSnapshotPane = useCallback((paneIdx: number) => {
+    const canvases = document.querySelectorAll('canvas');
+    if (canvases && canvases[paneIdx]) {
+      try {
+        const dataUrl = canvases[paneIdx].toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `Snapshot_P${paneIdx + 1}_${accessionNumber}.png`;
+        a.click();
+      } catch (err) {
+        console.warn('Snapshot error:', err);
+      }
+    }
+  }, [accessionNumber]);
+
+  const handleClosePane = useCallback((paneIdx: number) => {
+    if (onUpdatePaneSeries) onUpdatePaneSeries(paneIdx, -1);
+    else setLocalPaneSeriesMap((prev) => ({ ...prev, [paneIdx]: -1 }));
+  }, [onUpdatePaneSeries]);
+
+  const handlePaneSliceChange = useCallback(
+    (paneIdx: number, sl: number, total: number) => {
+      if (unlinkedPanes.has(paneIdx)) return;
+      handleSliceChange(paneIdx, sl, total);
+    },
+    [unlinkedPanes, handleSliceChange]
+  );
 
   const handlePaneClick = useCallback((idx: number) => {
     setActiveCellIndex(idx);
     clearDirectSlice(idx);
-    if (isLocalCase && localSeries.length > 0) {
-      const mappedIdx = paneSeriesMap[idx] ?? (idx % localSeries.length);
-      onActiveSeriesChange?.(mappedIdx);
+    if (availableSeries.length > 0) {
+      const mappedIdx = paneSeriesMap[idx] ?? (idx % availableSeries.length);
+      if (mappedIdx >= 0) onActiveSeriesChange?.(mappedIdx);
     }
-  }, [isLocalCase, localSeries.length, paneSeriesMap, onActiveSeriesChange, clearDirectSlice]);
+  }, [availableSeries.length, paneSeriesMap, onActiveSeriesChange, clearDirectSlice]);
 
   const handleDrop = useCallback((idx: number, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverPaneIndex(null);
     const raw = e.dataTransfer.getData('application/rad-series-index') || e.dataTransfer.getData('text/plain');
     const sIdx = parseInt(raw, 10);
-    if (!isNaN(sIdx) && sIdx >= 0 && sIdx < (localSeries.length || 100)) {
+    if (!isNaN(sIdx) && sIdx >= 0 && sIdx < (availableSeries.length || 100)) {
       if (onUpdatePaneSeries) onUpdatePaneSeries(idx, sIdx);
       else setLocalPaneSeriesMap((prev) => ({ ...prev, [idx]: sIdx }));
       clearDirectSlice(idx);
       setActiveCellIndex(idx);
       onActiveSeriesChange?.(sIdx);
     }
-  }, [localSeries.length, onActiveSeriesChange, clearDirectSlice, onUpdatePaneSeries]);
+  }, [availableSeries.length, onActiveSeriesChange, clearDirectSlice, onUpdatePaneSeries]);
 
   const handleGeometryUpdate = useCallback((idx: number, geom: SliceGeometry) => {
     setPanesGeometry((prev) => {
       const cur = prev[idx];
-      if (cur && cur.sliceIndex === geom.sliceIndex && cur.seriesNumber === geom.seriesNumber) {
-        return prev;
-      }
+      if (cur && cur.sliceIndex === geom.sliceIndex && cur.seriesNumber === geom.seriesNumber) return prev;
       return { ...prev, [idx]: geom };
     });
   }, []);
@@ -142,10 +180,13 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   const renderPane = (idx: number) => {
     const assignedSeries = getAssignedSeries(idx);
     const sCount = assignedSeries[0]?.sliceCount || 32;
+    const isLinked = !unlinkedPanes.has(idx);
+    const extSlice = isLinked ? getExternalSlice(idx, sCount) : undefined;
+
     return (
       <StitchGridPane
         key={idx} idx={idx} isActive={idx === activeCellIndex} isDragOver={idx === dragOverPaneIndex}
-        assignedSeries={assignedSeries} externalSlice={getExternalSlice(idx, sCount)}
+        assignedSeries={assignedSeries} externalSlice={extSlice}
         scoutLinesActive={scoutLinesActive} panesGeometry={panesGeometry} totalPanes={totalPanes}
         accessionNumber={accessionNumber} modality={modality} isLocalCase={isLocalCase} localCaseId={localCaseId}
         tool={tool} preset={preset} invert={invert} resetKey={resetKey} active3DPoint={active3DPoint}
@@ -153,14 +194,18 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
         onClear3DPoint={clear3DPoint} onClick={handlePaneClick}
         onDoubleClick={(pIdx) => setMaximizedPaneIndex((prev) => (prev === pIdx ? null : pIdx))}
         onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-        onGeometryUpdate={handleGeometryUpdate} onSliceChange={handleSliceChange}
+        onGeometryUpdate={handleGeometryUpdate} onSliceChange={handlePaneSliceChange}
         onSelectScoutSlice={handleSelectScoutSlice}
+        isLinked={isLinked}
+        onToggleLink={handleToggleLink}
+        onSnapshot={handleSnapshotPane}
+        onClosePane={handleClosePane}
       />
     );
   };
 
   return (
-    <div className="w-full h-full bg-surface-container-low flex flex-col overflow-hidden select-none relative">
+    <div className="w-full h-full bg-surface-container-low flex flex-col overflow-hidden select-none relative stitch-grid-container">
       {active3DPoint !== null && (
         <Zen3DPointBanner
           point3D={active3DPoint}

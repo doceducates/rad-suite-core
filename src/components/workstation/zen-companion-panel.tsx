@@ -23,7 +23,7 @@ export interface ZenCompanionPanelProps {
   accessionNumber: string; patientName?: string; patientAge?: string | number;
   patientGender?: string; patientMrn?: string; studyDescription?: string; pgrName?: string;
   modality?: string; isLocalCase?: boolean; localCaseId?: string; localSeries?: any[];
-  activeSeriesIndex?: number; onSelectSeries?: (idx: number) => void; seriesName?: string;
+  seriesList?: any[]; activeSeriesIndex?: number; onSelectSeries?: (idx: number) => void; seriesName?: string;
   report?: ReportEditorState; setReport?: React.Dispatch<React.SetStateAction<ReportEditorState>>;
   studyId?: string; reportId?: string;
   onSaveReport?: (newStatus?: string, milestoneTag?: string) => Promise<any> | void;
@@ -68,6 +68,7 @@ export function ZenCompanionPanel({
   isLocalCase,
   localCaseId,
   localSeries = [],
+  seriesList = [],
   activeSeriesIndex = 0,
   onSelectSeries,
   seriesName,
@@ -182,8 +183,8 @@ export function ZenCompanionPanel({
 
   const commonBodyProps = {
     activeTab, accessionNumber, patientName, patientAge, patientGender, patientMrn,
-    studyDescription, pgrName, modality, isLocalCase, localCaseId, localSeries,
-    activeSeriesIndex, onSelectSeries, report, setReport, studyId, reportId,
+    studyDescription, pgrName, modality, isLocalCase, localCaseId, localSeries, seriesList,
+    activeSeriesIndex, onSelectSeries, onSwapCenter, report, setReport, studyId, reportId,
     onSaveReport, syncStatus, savedTime, ddxResult, isLoadingDdx, onRefreshDdx: fetchDdx,
     onInsertImpression, findings, impression, clinicalHistory, patientClinicalNotes,
     initialContentJson, onUpdateContentJson, onSendToHmis, sendingHmis, onRevertHmis,

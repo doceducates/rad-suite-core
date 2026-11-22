@@ -22,8 +22,8 @@ import { useZenPointerEvents } from '@/hooks/use-zen-pointer-events';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useVitreaViewportInteractions } from '@/hooks/use-vitrea-viewport-interactions';
 import { VitreaHudMenu } from './vitrea-hud-menu';
-import { DicomPresetDropdown } from '@/components/dicom/dicom-preset-dropdown';
 import { ZenTouchReticle } from './zen-touch-reticle';
+import { ZenDicomSequenceDock } from './zen-dicom-sequence-dock';
 import { getPresetsForModality, type ClinicalPreset } from '@/services/clinical-presets.service';
 
 export interface LocalSeriesMeta {
@@ -34,56 +34,26 @@ export interface LocalSeriesMeta {
 }
 
 interface ZenDicomViewerProps {
-  accessionNumber: string;
-  modality?: string;
-  isLocalCase?: boolean;
-  localCaseId?: string;
-  localSeries?: LocalSeriesMeta[];
-  activeSeriesIndex?: number;
-  tool?: DicomTool;
-  preset?: string;
-  colormapId?: string;
-  isCinePlaying?: boolean;
-  onToggleCine?: () => void;
-  invert?: boolean;
-  externalSlice?: number;
-  resetKey?: number;
-  onSliceChange?: (sl: number) => void;
-  scoutLines?: ProjectedScoutLine[];
-  onSelectScoutSlice?: (seriesNumber: string | number, sliceIndex: number) => void;
-  onGeometryUpdate?: (geom: SliceGeometry) => void;
-  source?: 'local' | 's3' | 'pacs' | 'edge';
-  active3DPoint?: [number, number, number] | null;
-  onPoint3DSelect?: (pt: [number, number, number]) => void;
-  isCrosshairVisible?: boolean;
-  onClear3DPoint?: () => void;
+  accessionNumber: string; modality?: string; isLocalCase?: boolean; localCaseId?: string;
+  localSeries?: any[]; activeSeriesIndex?: number; onSelectSeries?: (idx: number) => void;
+  seriesList?: any[]; isRailCollapsed?: boolean; hideCanvasPreset?: boolean; tool?: DicomTool; preset?: string;
+  colormapId?: string; isCinePlaying?: boolean; onToggleCine?: () => void; invert?: boolean;
+  externalSlice?: number; resetKey?: number; onSliceChange?: (sl: number) => void;
+  scoutLines?: ProjectedScoutLine[]; onSelectScoutSlice?: (seriesNumber: string | number, sliceIndex: number) => void;
+  onGeometryUpdate?: (geom: SliceGeometry) => void; source?: 'local' | 's3' | 'pacs' | 'edge';
+  active3DPoint?: [number, number, number] | null; onPoint3DSelect?: (pt: [number, number, number]) => void;
+  isCrosshairVisible?: boolean; onClear3DPoint?: () => void;
+  isSeriesDrawerOpen?: boolean; onToggleSeriesDrawer?: () => void; onToggleInvert?: () => void;
 }
 
-export function ZenDicomViewer({
-  accessionNumber,
-  modality = 'CT',
-  isLocalCase = false,
-  localCaseId,
-  localSeries = [],
-  activeSeriesIndex = 0,
-  tool = 'wl',
-  preset = 'soft',
-  colormapId = 'grayscale',
-  isCinePlaying = false,
-  onToggleCine,
-  invert = false,
-  externalSlice,
-  resetKey,
-  onSliceChange,
-  scoutLines = [],
-  onSelectScoutSlice,
-  onGeometryUpdate,
-  source,
-  active3DPoint,
-  onPoint3DSelect,
-  isCrosshairVisible = true,
-  onClear3DPoint,
-}: ZenDicomViewerProps) {
+export function ZenDicomViewer(props: ZenDicomViewerProps) {
+  const {
+    accessionNumber, modality = 'CT', isLocalCase = false, localCaseId, localSeries = [],
+    activeSeriesIndex = 0, onSelectSeries, seriesList = [], tool = 'wl', preset = 'soft',
+    colormapId = 'grayscale', isCinePlaying = false, onToggleCine, invert = false, externalSlice,
+    resetKey, onSliceChange, scoutLines = [], onSelectScoutSlice, onGeometryUpdate, source,
+    active3DPoint, onPoint3DSelect, isCrosshairVisible = true, onClear3DPoint, onToggleInvert,
+  } = props;
   const [activeTool, setActiveTool] = useState<DicomTool>(tool);
   const [activePresetId, setActivePresetId] = useState(preset);
   const [measurements, setMeasurements] = useState<DicomMeasurement[]>([]);
@@ -91,9 +61,17 @@ export function ZenDicomViewer({
   const [cobbMeasurements, setCobbMeasurements] = useState<DicomCobbAngleMeasurement[]>([]);
   const [roiMeasurements, setRoiMeasurements] = useState<DicomRoiMeasurement[]>([]);
   const [glEnabled, setGlEnabled] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDragOver(false);
+    const raw = e.dataTransfer.getData('application/rad-series-index') || e.dataTransfer.getData('text/plain');
+    const sIdx = parseInt(raw, 10);
+    if (!isNaN(sIdx) && sIdx >= 0) onSelectSeries?.(sIdx);
+  };
 
   useEffect(() => { setActiveTool(tool); }, [tool]);
   useEffect(() => { setActivePresetId(preset); }, [preset]);
@@ -182,9 +160,19 @@ export function ZenDicomViewer({
       ref={containerRef}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (!isDragOver) setIsDragOver(true); }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false); }}
+      onDrop={handleDrop}
       onContextMenu={(e) => { e.preventDefault(); openHud(e.clientX, e.clientY); }}
       className="relative w-full h-full bg-black select-none overflow-hidden group"
     >
+      {isDragOver && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-primary/20 backdrop-blur-xs border-2 border-primary pointer-events-none animate-pulse">
+          <span className="text-xs font-mono font-bold text-white bg-black/80 px-3 py-1.5 rounded-md border border-primary/50 shadow-lg">
+            Drop Series to View
+          </span>
+        </div>
+      )}
       <div
         className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden touch-none select-none cursor-crosshair"
         onWheel={(e) => { if (e.ctrlKey || e.metaKey || activeTool === 'zoom') return; handleWheel(e, activeTool); }}
@@ -205,25 +193,24 @@ export function ZenDicomViewer({
           canvasRef={canvasRef} isRealDcm={isRealDcm} parsedSlice={parsedSlice} sliceKey={sliceKey}
           ww={ww} wc={wc} invert={invert} colormapId={colormapId} pan={pan} zoom={zoom} glEnabled={glEnabled}
           onGlFallback={() => setGlEnabled(false)} tool={activeTool} measurements={measurements}
-          onAddMeasurement={(m) => setMeasurements((prev) => [...prev, m])}
-          onDeleteMeasurement={(id) => setMeasurements((prev) => prev.filter((m) => m.id !== id))}
-          onClearMeasurements={() => setMeasurements([])}
-          angleMeasurements={angleMeasurements}
-          onAddAngleMeasurement={(m) => setAngleMeasurements((prev) => [...prev, m])}
-          onDeleteAngleMeasurement={(id) => setAngleMeasurements((prev) => prev.filter((m) => m.id !== id))}
-          onClearAngleMeasurements={() => setAngleMeasurements([])}
-          cobbMeasurements={cobbMeasurements}
-          onAddCobbMeasurement={(m) => setCobbMeasurements((prev) => [...prev, m])}
-          onDeleteCobbMeasurement={(id) => setCobbMeasurements((prev) => prev.filter((m) => m.id !== id))}
-          onClearCobbMeasurements={() => setCobbMeasurements([])}
-          roiMeasurements={roiMeasurements}
-          onAddRoiMeasurement={(m) => setRoiMeasurements((prev) => [...prev, m])}
-          onDeleteRoiMeasurement={(id) => setRoiMeasurements((prev) => prev.filter((m) => m.id !== id))}
-          onClearRoiMeasurements={() => setRoiMeasurements([])}
+          onAddMeasurement={(m) => setMeasurements((p) => [...p, m])} onDeleteMeasurement={(id) => setMeasurements((p) => p.filter((m) => m.id !== id))} onClearMeasurements={() => setMeasurements([])}
+          angleMeasurements={angleMeasurements} onAddAngleMeasurement={(m) => setAngleMeasurements((p) => [...p, m])} onDeleteAngleMeasurement={(id) => setAngleMeasurements((p) => p.filter((m) => m.id !== id))} onClearAngleMeasurements={() => setAngleMeasurements([])}
+          cobbMeasurements={cobbMeasurements} onAddCobbMeasurement={(m) => setCobbMeasurements((p) => [...p, m])} onDeleteCobbMeasurement={(id) => setCobbMeasurements((p) => p.filter((m) => m.id !== id))} onClearCobbMeasurements={() => setCobbMeasurements([])}
+          roiMeasurements={roiMeasurements} onAddRoiMeasurement={(m) => setRoiMeasurements((p) => [...p, m])} onDeleteRoiMeasurement={(id) => setRoiMeasurements((p) => p.filter((m) => m.id !== id))} onClearRoiMeasurements={() => setRoiMeasurements([])}
           scoutLines={scoutLines} onSelectScoutSlice={onSelectScoutSlice}
           active3DPoint={active3DPoint} currentGeometry={currentGeometry}
           isCrosshairVisible={isCrosshairVisible} onClear3DPoint={onClear3DPoint}
         />
+
+        {/* Floating Sequence Explorer Dock (screen-gated to mobile/compact screens) */}
+        <div className="md:hidden">
+          <ZenDicomSequenceDock
+            seriesList={seriesList && seriesList.length > 0 ? seriesList : (isRealDcm ? localSeries : demoStudy.series)}
+            activeSeriesIndex={activeSeriesIndex}
+            onSelectSeries={onSelectSeries || (() => {})}
+            isRailCollapsed={true}
+          />
+        </div>
 
         <ZenTouchReticle visible={reticle.visible} x={reticle.x} y={reticle.y} text={reticle.text} />
 
@@ -240,24 +227,21 @@ export function ZenDicomViewer({
           modality={modality} seriesLabel={seriesLabel} seriesNumber={seriesNum}
           slice={slice} maxSlices={maxSlices} orient={orient} iop={parsedSlice?.meta.imageOrientationPatient}
           ww={ww} wc={wc} zoom={zoom} hoverHu={hoverHu} source={source}
+          activePresetId={activePresetId}
+          pixelData={parsedSlice?.pixelData}
+          seriesMeta={seriesMeta}
+          onSelectPreset={(p: ClinicalPreset) => {
+            setActivePresetId(p.id);
+            setWw(p.ww);
+            setWc(p.wc);
+          }}
+          onWwWcChange={(newWw, newWc) => {
+            setWw(newWw);
+            setWc(newWc);
+          }}
+          onToggleInvert={onToggleInvert}
+          invert={invert}
         />
-
-        {/* Responsive Clinical Preset Dropdown Menu */}
-        <div className="absolute top-2 left-2 z-20">
-          <DicomPresetDropdown
-            modality={modality}
-            activePresetId={activePresetId}
-            pixelData={parsedSlice?.pixelData}
-            seriesMeta={seriesMeta}
-            currentWw={ww}
-            currentWc={wc}
-            onSelectPreset={(p: ClinicalPreset) => {
-              setActivePresetId(p.id);
-              setWw(p.ww);
-              setWc(p.wc);
-            }}
-          />
-        </div>
 
         <ZenDicomScrubber
           seriesNumber={seriesNum} slice={slice} maxSlices={maxSlices}

@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { getOrientationMarkers } from '@/services/dicom-geometry.service';
+import { ZenDicomBottomRightWl } from './zen-dicom-bottom-right-wl';
+import type { ClinicalPreset, DicomSequenceMeta } from '@/services/clinical-presets.service';
 
 interface ZenDicomHudProps {
   patientName: string;
@@ -25,11 +27,19 @@ interface ZenDicomHudProps {
   } | null;
   iop?: number[];
   source?: 'local' | 's3' | 'pacs' | 'edge';
+  activePresetId?: string;
+  pixelData?: ArrayLike<number>;
+  seriesMeta?: DicomSequenceMeta;
+  onSelectPreset?: (preset: ClinicalPreset) => void;
+  onWwWcChange?: (ww: number, wc: number) => void;
+  onToggleInvert?: () => void;
+  invert?: boolean;
 }
 
 export function ZenDicomHud({
   patientName,
   patientId,
+  modality,
   seriesLabel,
   seriesNumber,
   slice,
@@ -41,6 +51,13 @@ export function ZenDicomHud({
   hoverHu,
   iop,
   source,
+  activePresetId,
+  pixelData,
+  seriesMeta,
+  onSelectPreset,
+  onWwWcChange,
+  onToggleInvert,
+  invert,
 }: ZenDicomHudProps) {
   const markers = getOrientationMarkers(orient, iop);
 
@@ -102,11 +119,20 @@ export function ZenDicomHud({
         )}
       </div>
 
-      {/* Bottom-Right Corner HUD: Window/Level & Zoom */}
-      <div className="absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] right-3 flex flex-col items-end font-mono text-[10px] leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none">
-        <span className="text-tertiary-fixed font-semibold">W: {Math.round(ww)}  L: {Math.round(wc)}</span>
-        <span className="text-neutral-400 text-[9px]">{Math.round(zoom * 100)}%</span>
-      </div>
+      {/* Bottom-Right Corner HUD: Interactive Vitrea Window/Level & Zoom */}
+      <ZenDicomBottomRightWl
+        ww={ww}
+        wc={wc}
+        zoom={zoom}
+        modality={modality}
+        activePresetId={activePresetId}
+        pixelData={pixelData}
+        seriesMeta={seriesMeta}
+        onSelectPreset={onSelectPreset}
+        onWwWcChange={onWwWcChange}
+        onToggleInvert={onToggleInvert}
+        invert={invert}
+      />
     </>
   );
 }
