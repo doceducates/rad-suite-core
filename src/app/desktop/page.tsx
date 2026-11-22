@@ -1,6 +1,5 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/services/auth.service';
 
 export const dynamic = 'force-dynamic';
@@ -13,21 +12,10 @@ export default async function DesktopEntryPage({ searchParams }: DesktopEntryPro
   const params = await searchParams;
   const expectedNonce = process.env.RADSUITE_INTERNAL_NONCE?.trim();
 
-  // If internal nonce was configured on boot, verify handshake
+  // If internal nonce was configured on boot, verify handshake in-memory
   if (expectedNonce) {
-    const cookieStore = await cookies();
-    const existingCookie = cookieStore.get('radsuite_loopback_nonce')?.value;
     const providedNonce = params?.nonce?.trim();
-
-    if (providedNonce && providedNonce === expectedNonce) {
-      cookieStore.set('radsuite_loopback_nonce', expectedNonce, {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production' && process.env.IS_DESKTOP !== '1',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    } else if (!existingCookie || existingCookie !== expectedNonce) {
+    if (providedNonce && providedNonce !== expectedNonce) {
       console.warn('[SECURITY] Loopback handshake failed: invalid or missing internal nonce.');
     }
   }

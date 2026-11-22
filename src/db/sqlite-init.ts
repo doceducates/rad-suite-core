@@ -80,7 +80,7 @@ export function initSqliteTables(sqlite: any): void {
         accession_number TEXT NOT NULL UNIQUE,
         modality TEXT NOT NULL,
         scan_type TEXT NOT NULL,
-        body_part TEXT NOT NULL,
+        body_part TEXT NOT NULL DEFAULT '',
         clinical_history TEXT,
         priority TEXT NOT NULL DEFAULT 'routine',
         status TEXT NOT NULL DEFAULT 'pending',
