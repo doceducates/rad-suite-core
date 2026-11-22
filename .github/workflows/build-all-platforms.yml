@@ -174,6 +174,7 @@ jobs:
     needs: [validate-core]
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: macos-14
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -218,6 +219,7 @@ jobs:
     needs: [validate-core]
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -266,28 +268,32 @@ jobs:
     name: Publish Consolidated Release
     needs: [build-windows, build-android, build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: always() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && (needs.build-windows.result == 'success' || needs.build-android.result == 'success')
     steps:
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rad-suite-windows-installer
           path: releases/windows
 
       - name: Download Android Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rad-suite-android-apk
           path: releases/android
 
       - name: Download macOS Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rad-suite-macos-dmg
           path: releases/macos
 
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rad-suite-linux-packages
           path: releases/linux
