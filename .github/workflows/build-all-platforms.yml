@@ -43,10 +43,7 @@ jobs:
       - name: Install Project Dependencies
         run: npm ci
 
-      - name: TypeScript Typecheck
-        run: npm run typecheck
-
-      - name: Next.js Production Build Validation
+      - name: Next.js Production Build & TypeScript Validation
         env:
           NODE_ENV: production
           NEXT_PUBLIC_APP_URL: https://radiology.sehatai.org
