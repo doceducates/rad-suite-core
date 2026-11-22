@@ -161,7 +161,8 @@ jobs:
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.12077973
         run: |
-          npx @tauri-apps/cli android build --apk --target aarch64 || (cd src-tauri/gen/android && chmod +x gradlew && ./gradlew assembleArm64Debug)
+          chmod +x src-tauri/gen/android/gradlew || true
+          npx @tauri-apps/cli android build --apk --target aarch64 || (cd src-tauri/gen/android && ./gradlew assembleArm64Debug)
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
