@@ -153,4 +153,12 @@ When working on specific features, refer to the authoritative documentation file
 - **Mandatory Cancellation Hook**: Every multi-step background loop MUST check for an abort signal or cancellation token (`isCancelled`) before dispatching subsequent items. When `backgroundTasks.stopTask(id)` is triggered, the operation must cleanly halt, mark pending items as `'stopped'`, and persist partial progress.
 - **Durable Rehydration & Resumption**: All background tasks must serialize state to `radsuite:background_tasks:v1`. Operations interrupted by page reloads must rehydrate as `'interrupted'` and expose a clean resumption mechanism for unprocessed sub-items.
 
+## 21. Multi-Repository Architecture & Zero-Leak Public Release Invariant
+- **Strict Physical Repository Separation**:
+  1. **Public Open-Core (`rad-suite-core`)**: Hosted publicly on GitHub. Strictly open-core diagnostic workstation. Never contains personal hospital ops scripts, doctor credentials, hospital internal subnets, or proprietary plugins. All edge routes dynamically resolve through `getClinicHostDir()`.
+  2. **Private Plugins (`rad-suite-plugins`)**: Hosted privately on GitHub. Contains proprietary hospital plugins (`hmis-gateway`, `clinic-edge`, `clinical-ai`, `anatomy-atlas`) and personal operations scripts (`ops/`). Deployed to the VPS via `npm run deploy:vps`.
+- **Zero-Leak Invariant**: Every commit on public branches (`public-release`, `main`) must pass leak checks (`git grep` for credentials, private IPs, and API tokens). Never check in `.env*` files (only `.env.example`).
+- **Semantic Versioning & Auto-Update Invariant**: Any version increment must be synchronized via `npm run bump:patch` (or `minor`/`major`) across `package.json`, `tauri.conf.json`, `Cargo.toml`, and `build.gradle.kts`. When tagged `v*.*.*` or dispatched, GitHub Actions builds all 4 platforms (Windows, Android, macOS, Linux) and generates `latest.json` for in-app desktop auto-updates.
+
+
 
