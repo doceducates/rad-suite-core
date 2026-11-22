@@ -158,10 +158,10 @@ jobs:
           fi
 
       - name: Build Android APK
-        env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.12077973
         run: |
           chmod +x src-tauri/gen/android/gradlew || true
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export NDK_HOME="${NDK_HOME:-$ANDROID_HOME/ndk/27.0.12077973}"
           npx @tauri-apps/cli android build --apk --target aarch64 || (cd src-tauri/gen/android && ./gradlew assembleArm64Debug)
 
       - name: Upload Android Artifact
@@ -309,7 +309,7 @@ jobs:
           files: |
             releases/windows/*.exe
             releases/windows/latest.json
-            releases/android/*.apk
+            releases/android/**/*.apk
             releases/macos/*.dmg
             releases/linux/*.deb
             releases/linux/*.AppImage
