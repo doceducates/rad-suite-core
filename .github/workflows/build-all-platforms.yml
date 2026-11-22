@@ -1,0 +1,309 @@
+name: Build & Release All Platforms (Windows, Android, macOS, Linux)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g. 1.0.1)'
+        required: true
+        default: '1.0.1'
+      release_notes:
+        description: 'Release Notes summary'
+        required: false
+        default: 'Multi-platform release for Windows, Android, macOS, and Linux.'
+  push:
+    tags:
+      - 'v*.*.*'
+    branches:
+      - main
+      - public-release
+      - core-release
+
+concurrency:
+  group: build-all-platforms-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # 0. CI VALIDATION (Runs on every push to branches)
+  # ============================================================
+  validate-core:
+    name: Validate Core & Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Next.js Production Build Validation
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_URL: https://radiology.sehatai.org
+          BUILD_TARGET: desktop
+        run: npm run build
+
+  # ============================================================
+  # 1. WINDOWS DESKTOP (NSIS x64)
+  # ============================================================
+  build-windows:
+    name: Windows x64 Installer
+    needs: [validate-core]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Build Next.js Standalone & Tauri Installer
+        run: |
+          $ver = "${{ github.event.inputs.version }}"
+          if (-not $ver) { $ver = "${{ github.ref_name }}".TrimStart('v') }
+          if (-not $ver) { $ver = "1.0.0" }
+          $notes = "${{ github.event.inputs.release_notes }}"
+          if (-not $notes) { $notes = "Rad Suite Diagnostic Radiology Workstation v$ver" }
+          powershell -ExecutionPolicy Bypass -File scripts/release-desktop.ps1 -Version $ver -ReleaseNotes $notes
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rad-suite-windows-installer
+          path: |
+            public/releases/*.exe
+            public/releases/latest.json
+          retention-days: 14
+
+  # ============================================================
+  # 2. ANDROID MOBILE / TABLET (APK)
+  # ============================================================
+  build-android:
+    name: Android APK (ARM64)
+    needs: [validate-core]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK 27
+        run: sdkmanager "ndk;27.0.12077973"
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Prepare Mobile Webview Bootstrap
+        run: |
+          mkdir -p out
+          if [ ! -f out/index.html ]; then
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Rad Suite Mobile</title></head><body><script>window.location.replace("https://radiology.sehatai.org/desktop");</script></body></html>' > out/index.html
+          fi
+
+      - name: Build Android APK
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.12077973
+        run: |
+          npx @tauri-apps/cli android build --apk --target aarch64
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rad-suite-android-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          retention-days: 14
+
+  # ============================================================
+  # 3. MACOS DESKTOP (.DMG / .APP)
+  # ============================================================
+  build-macos:
+    name: macOS DMG (Apple Silicon)
+    needs: [validate-core]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Prepare Desktop Bootstrap
+        run: |
+          mkdir -p out
+          if [ ! -f out/index.html ]; then
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Rad Suite Workstation</title><meta http-equiv="refresh" content="0; url=http://localhost:3780/desktop"/></head><body style="background:#070d19;color:#38bdf8;display:flex;align-items:center;justify-content:center;height:100vh;"><h3>Initializing Rad Suite Viewport...</h3></body></html>' > out/index.html
+          fi
+
+      - name: Build macOS DMG
+        run: |
+          npx @tauri-apps/cli build --bundles dmg,app
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rad-suite-macos-dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          retention-days: 14
+
+  # ============================================================
+  # 4. LINUX DESKTOP (.DEB / .APPIMAGE)
+  # ============================================================
+  build-linux:
+    name: Linux Packages (.deb / .AppImage)
+    needs: [validate-core]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies for WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Prepare Desktop Bootstrap
+        run: |
+          mkdir -p out
+          if [ ! -f out/index.html ]; then
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Rad Suite Workstation</title><meta http-equiv="refresh" content="0; url=http://localhost:3780/desktop"/></head><body style="background:#070d19;color:#38bdf8;display:flex;align-items:center;justify-content:center;height:100vh;"><h3>Initializing Rad Suite Viewport...</h3></body></html>' > out/index.html
+          fi
+
+      - name: Build Linux Bundles
+        run: |
+          npx @tauri-apps/cli build --bundles deb,appimage
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rad-suite-linux-packages
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          retention-days: 14
+
+  # ============================================================
+  # 5. CONSOLIDATED GITHUB RELEASE
+  # ============================================================
+  publish-all:
+    name: Publish Consolidated Release
+    needs: [build-windows, build-android, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rad-suite-windows-installer
+          path: releases/windows
+
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rad-suite-android-apk
+          path: releases/android
+
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rad-suite-macos-dmg
+          path: releases/macos
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rad-suite-linux-packages
+          path: releases/linux
+
+      - name: Publish All Platforms to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          name: Rad Suite Multi-Platform Release ${{ github.event.inputs.version || github.ref_name }}
+          files: |
+            releases/windows/*.exe
+            releases/windows/latest.json
+            releases/android/*.apk
+            releases/macos/*.dmg
+            releases/linux/*.deb
+            releases/linux/*.AppImage

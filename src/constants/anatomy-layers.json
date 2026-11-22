@@ -1,0 +1,461 @@
+{
+  "Brachial-Plexus-MR": [
+    {
+      "layer": "numerotation",
+      "title": "Numbering: Ribs-Vertebrae",
+      "sort_order": 1
+    },
+    {
+      "layer": "aires",
+      "title": "Lymph node stations",
+      "sort_order": 11
+    }
+  ],
+  "Pelvis-Male-MR": [
+    {
+      "layer": "mcneal",
+      "title": "Zonal anatomy of prostate (McNeal)",
+      "sort_order": 10
+    }
+  ],
+  "abdomen": [
+    {
+      "layer": "segments",
+      "title": "Hepatic segmentation",
+      "sort_order": 3
+    }
+  ],
+  "aires-radiotherapie": [
+    {
+      "layer": "aires",
+      "title": "Lymph node stations",
+      "sort_order": 0
+    },
+    {
+      "layer": "ganglions2",
+      "title": "Lymph node",
+      "sort_order": 1
+    },
+    {
+      "layer": "segments",
+      "title": "Hepatic segmentation: lobes, parts, divisions and segments",
+      "sort_order": 5
+    }
+  ],
+  "brain-ct": [
+    {
+      "layer": "lobes",
+      "title": "Regions: Cerebral lobes - Brainstem",
+      "sort_order": 1
+    },
+    {
+      "layer": "territoires",
+      "title": "Vasculary territories",
+      "sort_order": 11
+    }
+  ],
+  "brain3dmri": [
+    {
+      "layer": "etages",
+      "title": "Cerebral lobes/Regions",
+      "sort_order": 0
+    },
+    {
+      "layer": "noyaux",
+      "title": "Nucleus of cranial nerve",
+      "sort_order": 1
+    },
+    {
+      "layer": "vasculaire",
+      "title": "Vasculary territories",
+      "sort_order": 9
+    },
+    {
+      "layer": "fibres",
+      "title": "Association fibres of telencephalon",
+      "sort_order": 12
+    }
+  ],
+  "cerveau": [
+    {
+      "layer": "lobes",
+      "title": "Regions: Cerebral lobes - Brainstem",
+      "sort_order": 0
+    }
+  ],
+  "cerveau-anatomie": [
+    {
+      "layer": "regions",
+      "title": "Cerebral lobes/Regions",
+      "sort_order": 0
+    },
+    {
+      "layer": "mesencephale",
+      "title": "Mesencephalon; Midbrain",
+      "sort_order": 0
+    },
+    {
+      "layer": "pont",
+      "title": "Myelencephalon; Medulla oblongata; Bulb",
+      "sort_order": 1
+    },
+    {
+      "layer": "noyau",
+      "title": "Basal nuclei and related structures",
+      "sort_order": 7
+    }
+  ],
+  "cheville": [
+    {
+      "layer": "articulations",
+      "title": "Joints",
+      "sort_order": 2
+    }
+  ],
+  "coeur": [
+    {
+      "layer": "segmentation",
+      "title": "Heart segmentation",
+      "sort_order": 10
+    }
+  ],
+  "cranium-illustrations": [
+    {
+      "layer": "anatomiegenerale",
+      "title": "General Anatomy",
+      "sort_order": 0
+    },
+    {
+      "layer": "sphenoide",
+      "title": "Sphenoid; Sphenoidal bone",
+      "sort_order": 3
+    },
+    {
+      "layer": "temporal",
+      "title": "Temporal bone",
+      "sort_order": 4
+    },
+    {
+      "layer": "ethmoide",
+      "title": "Ethmoid; Ethmoidal bone",
+      "sort_order": 5
+    },
+    {
+      "layer": "maxillaire",
+      "title": "Maxilla",
+      "sort_order": 10
+    },
+    {
+      "layer": "mandibule",
+      "title": "Mandible",
+      "sort_order": 13
+    }
+  ],
+  "elbow-mri-3d": [
+    {
+      "layer": "compartiments",
+      "title": "Compartments",
+      "sort_order": 6
+    }
+  ],
+  "eye-illustrations": [
+    {
+      "layer": "paupiere",
+      "title": "Eyelids",
+      "sort_order": 4
+    },
+    {
+      "layer": "nerfoptique",
+      "title": "Nerves",
+      "sort_order": 9
+    }
+  ],
+  "face": [
+    {
+      "layer": "dents",
+      "title": "Teeth",
+      "sort_order": 1
+    },
+    {
+      "layer": "espaces",
+      "title": "Deep spaces of face and neck",
+      "sort_order": 4
+    }
+  ],
+  "face-cou-irm": [
+    {
+      "layer": "dent",
+      "title": "Oral cavity",
+      "sort_order": 5
+    },
+    {
+      "layer": "rachis",
+      "title": "Vertebral column",
+      "sort_order": 6
+    },
+    {
+      "layer": "ganglion",
+      "title": "Lymph nodes of head and neck",
+      "sort_order": 12
+    },
+    {
+      "layer": "espaces",
+      "title": "Deep spaces of face and neck",
+      "sort_order": 13
+    }
+  ],
+  "hand-mr": [
+    {
+      "layer": "articulations",
+      "title": "Joints",
+      "sort_order": 2
+    }
+  ],
+  "lowerlimb": [
+    {
+      "layer": "compartiments",
+      "title": "Compartments",
+      "sort_order": 7
+    }
+  ],
+  "lumbar-spine-mri": [
+    {
+      "layer": "lordose",
+      "title": "Vertebral column",
+      "sort_order": 1
+    }
+  ],
+  "mediastin-illustrations": [
+    {
+      "layer": "thymus",
+      "title": "Lymphoid system",
+      "sort_order": 6
+    },
+    {
+      "layer": "segments",
+      "title": "Lungs",
+      "sort_order": 9
+    }
+  ],
+  "mi-anatomie": [
+    {
+      "layer": "os",
+      "title": "Bones; Skeletal system",
+      "sort_order": 1
+    },
+    {
+      "layer": "ligament",
+      "title": "Joint",
+      "sort_order": 2
+    },
+    {
+      "layer": "muscles",
+      "title": "Muscles; Muscular system",
+      "sort_order": 4
+    },
+    {
+      "layer": "tendon",
+      "title": "Tendon",
+      "sort_order": 5
+    },
+    {
+      "layer": "etages",
+      "title": "Arteries",
+      "sort_order": 8
+    },
+    {
+      "layer": "nerfs",
+      "title": "Nerves",
+      "sort_order": 11
+    }
+  ],
+  "moelle-spinale-anatomie": [
+    {
+      "layer": "moext",
+      "title": "External features",
+      "sort_order": 0
+    },
+    {
+      "layer": "sgrise",
+      "title": "Grey substance",
+      "sort_order": 2
+    },
+    {
+      "layer": "sblanche",
+      "title": "White substance",
+      "sort_order": 3
+    }
+  ],
+  "ms-anatomie": [
+    {
+      "layer": "dent",
+      "title": "Bones; Skeletal system",
+      "sort_order": 1
+    },
+    {
+      "layer": "articulation",
+      "title": "Joint",
+      "sort_order": 2
+    },
+    {
+      "layer": "ligament",
+      "title": "Ligaments",
+      "sort_order": 3
+    },
+    {
+      "layer": "muscle",
+      "title": "Muscles; Muscular system",
+      "sort_order": 4
+    }
+  ],
+  "paroi-thorax-sein-illustrations": [
+    {
+      "layer": "regions",
+      "title": "Regions",
+      "sort_order": 0
+    },
+    {
+      "layer": "cotes",
+      "title": "Ribs",
+      "sort_order": 0
+    },
+    {
+      "layer": "lignes",
+      "title": "Planes and lines",
+      "sort_order": 1
+    },
+    {
+      "layer": "thorax",
+      "title": "Front of chest",
+      "sort_order": 2
+    },
+    {
+      "layer": "rachis",
+      "title": "Spine",
+      "sort_order": 3
+    },
+    {
+      "layer": "articulations",
+      "title": "Joints",
+      "sort_order": 3
+    },
+    {
+      "layer": "muscles",
+      "title": "Muscles",
+      "sort_order": 5
+    },
+    {
+      "layer": "sein",
+      "title": "Breast",
+      "sort_order": 11
+    }
+  ],
+  "pelvis": [
+    {
+      "layer": "mesures",
+      "title": "Pelvic measurements",
+      "sort_order": 10
+    }
+  ],
+  "pet-ct": [
+    {
+      "layer": "sp",
+      "title": "Bronchopulmonary segments",
+      "sort_order": 5
+    },
+    {
+      "layer": "sh",
+      "title": "Hepatic segmentation",
+      "sort_order": 8
+    },
+    {
+      "layer": "peritoine",
+      "title": "Peritoneal Cancer Index",
+      "sort_order": 10
+    },
+    {
+      "layer": "aires",
+      "title": "Lymph nodes regions",
+      "sort_order": 17
+    }
+  ],
+  "poumons-illustrations": [
+    {
+      "layer": "mbronches",
+      "title": "Bronchial tree",
+      "sort_order": 1
+    }
+  ],
+  "rachis-dos-anatomie": [
+    {
+      "layer": "anatomie",
+      "title": "General Anatomy",
+      "sort_order": 0
+    },
+    {
+      "layer": "vertebre",
+      "title": "Numbering - Vertebrae",
+      "sort_order": 1
+    },
+    {
+      "layer": "os",
+      "title": "Bones; Skeletal system",
+      "sort_order": 2
+    }
+  ],
+  "rachis-radios": [
+    {
+      "layer": "anatomie",
+      "title": "General Anatomy",
+      "sort_order": 0
+    },
+    {
+      "layer": "vertebre",
+      "title": "Numbering - Vertebrae",
+      "sort_order": 1
+    },
+    {
+      "layer": "os",
+      "title": "Bones; Skeletal system",
+      "sort_order": 2
+    }
+  ],
+  "sna-anatomie": [
+    {
+      "layer": "etages",
+      "title": "Autonomic division of nervous system; Autonomic part of peripheral nervous system",
+      "sort_order": 0
+    }
+  ],
+  "thorax": [
+    {
+      "layer": "segments",
+      "title": "Lungs",
+      "sort_order": 0
+    },
+    {
+      "layer": "segments",
+      "title": "Bronchopulmonary segments",
+      "sort_order": 1
+    }
+  ],
+  "upper-limb": [
+    {
+      "layer": "compartiments",
+      "title": "Compartments",
+      "sort_order": 7
+    }
+  ],
+  "wrist-mri-3d": [
+    {
+      "layer": "articulations",
+      "title": "Joints",
+      "sort_order": 2
+    },
+    {
+      "layer": "gaines",
+      "title": "Carpal tendinous sheaths",
+      "sort_order": 7
+    }
+  ]
+}

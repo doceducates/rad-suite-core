@@ -1,0 +1,170 @@
+{
+  "Head_Ax_0452.01": {
+    "region": "head",
+    "plane": "axial",
+    "level": "Vertex / Superior Parietal",
+    "cadaver": "Head_Ax_0452.01_Cad.png",
+    "radiology": "Head_Ax_0452.01_Rad.png"
+  },
+  "Head_Ax_0803.01": {
+    "region": "head",
+    "plane": "axial",
+    "level": "Midbrain / Orbits / Cerebellum",
+    "cadaver": "Head_Ax_0803.01_Cad.png",
+    "radiology": "Head_Ax_0803.01_Rad.png"
+  },
+  "Head_Ax_0942.01": {
+    "region": "head",
+    "plane": "axial",
+    "level": "Pons / Temporal Lobes / Ethmoid",
+    "cadaver": "Head_Ax_0942.01_Cad.png",
+    "radiology": "Head_Ax_0942.01_Rad.png"
+  },
+  "Head_Ax_1118.01": {
+    "region": "head",
+    "plane": "axial",
+    "level": "Foramen Magnum / Maxilla",
+    "cadaver": "Head_Ax_1118.01_Cad.png",
+    "radiology": "Head_Ax_1118.01_Rad.png"
+  },
+  "Head_Cor_0298.01": {
+    "region": "head",
+    "plane": "coronal",
+    "level": "Anterior Frontal / Orbits",
+    "cadaver": "Head_Cor_0298.01_Cad.png",
+    "radiology": "Head_Cor_0298.01_Rad.png"
+  },
+  "Head_Cor_0653.01": {
+    "region": "head",
+    "plane": "coronal",
+    "level": "Mid-Cerebral / Basal Ganglia",
+    "cadaver": "Head_Cor_0653.01_Cad.png",
+    "radiology": "Head_Cor_0653.01_Rad.png"
+  },
+  "Head_Cor_0817.01": {
+    "region": "head",
+    "plane": "coronal",
+    "level": "Posterior Parietal / Brainstem",
+    "cadaver": "Head_Cor_0817.01_Cad.png",
+    "radiology": "Head_Cor_0817.01_Rad.png"
+  },
+  "Head_Cor_1053.01": {
+    "region": "head",
+    "plane": "coronal",
+    "level": "Occipital / Posterior Fossa",
+    "cadaver": "Head_Cor_1053.01_Cad.png",
+    "radiology": "Head_Cor_1053.01_Rad.png"
+  },
+  "Head_Sag_0523.01": {
+    "region": "head",
+    "plane": "sagittal",
+    "level": "Mid-Sagittal (Corpus Callosum, Brainstem)",
+    "cadaver": "Head_Sag_0523.01_Cad.png",
+    "radiology": "Head_Sag_0523.01_Rad.png"
+  },
+  "Head_Sag_0761.01": {
+    "region": "head",
+    "plane": "sagittal",
+    "level": "Parasagittal (Orbit, Temporal Lobe)",
+    "cadaver": "Head_Sag_0761.01_Cad.png",
+    "radiology": "Head_Sag_0761.01_Rad.png"
+  },
+  "c_vm1294_fre": {
+    "region": "thorax",
+    "plane": "axial",
+    "level": "T2-T3 / Aortic Arch & Trachea",
+    "cadaver": "c_vm1294_fre_Cadaver.png",
+    "radiology": "c_vm1294_fre_Comped.png"
+  },
+  "c_vm1342_fre": {
+    "region": "thorax",
+    "plane": "axial",
+    "level": "T4-T5 / Pulmonary Trunk & Carina",
+    "cadaver": "c_vm1342_fre_Cadaver.png",
+    "radiology": "c_vm1342_fre_Comped.png"
+  },
+  "c_vm1354_fre": {
+    "region": "thorax",
+    "plane": "axial",
+    "level": "T6-T7 / Cardiac Ventricles (4-Chamber)",
+    "cadaver": "c_vm1354_fre_Cadaver.png",
+    "radiology": "c_vm1354_fre_Comped.png"
+  },
+  "c_vm1390_fre": {
+    "region": "thorax",
+    "plane": "axial",
+    "level": "T8-T9 / Diaphragmatic Dome & IVC",
+    "cadaver": "c_vm1390_fre_Cadaver.png",
+    "radiology": "c_vm1390_fre_Comped.png"
+  },
+  "c_vm1447_fre": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "T11-T12 / Hepatic Dome & Stomach Fundus",
+    "cadaver": "c_vm1447_fre_Cadaver.png",
+    "radiology": "c_vm1447_fre_Comped.png"
+  },
+  "c_vm1503_fre": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "L1 / Celiac Trunk, Liver, Spleen",
+    "cadaver": "c_vm1503_fre_Cadaver.png",
+    "radiology": "c_vm1503_fre_Comped.png"
+  },
+  "c_vm1526_fro": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "L1-L2 / Renal Hilum & SMA",
+    "cadaver": "c_vm1526_fro_Cadaver.png",
+    "radiology": "c_vm1526_fro_Comped.png"
+  },
+  "c_vm1575_fre": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "L3 / Lower Renal Poles & Aorta",
+    "cadaver": "c_vm1575_fre_Cadaver.png",
+    "radiology": "c_vm1575_fre_Comped.png"
+  },
+  "c_vm1620_fre": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "L4 / Umbilical Level & Mesentery",
+    "cadaver": "c_vm1620_fre_Cadaver.png",
+    "radiology": "c_vm1620_fre_Comped.png"
+  },
+  "c_vm1692_fre": {
+    "region": "abdomen",
+    "plane": "axial",
+    "level": "L5 / Aortic Bifurcation & Iliac Crest",
+    "cadaver": "c_vm1692_fre_Cadaver.png",
+    "radiology": "c_vm1692_fre_Comped.png"
+  },
+  "c_vm1833_fre": {
+    "region": "pelvis",
+    "plane": "axial",
+    "level": "S1-S2 / Sacroiliac Joint & Psoas",
+    "cadaver": "c_vm1833_fre_Cadaver.png",
+    "radiology": "c_vm1833_fre_Comped.png"
+  },
+  "c_vm1876_fre": {
+    "region": "pelvis",
+    "plane": "axial",
+    "level": "Mid-Pelvis / Femoral Heads & Bladder",
+    "cadaver": "c_vm1876_fre_Cadaver.png",
+    "radiology": "c_vm1876_fre_Comped.png"
+  },
+  "c_vm1894_fre": {
+    "region": "pelvis",
+    "plane": "axial",
+    "level": "Lower Pelvis / Prostate & Pelvic Floor",
+    "cadaver": "c_vm1894_fre_Cadaver.png",
+    "radiology": "c_vm1894_fre_Comped.png"
+  },
+  "c_vm1924_fre": {
+    "region": "pelvis",
+    "plane": "axial",
+    "level": "Perineum / Proximal Thigh Musculature",
+    "cadaver": "c_vm1924_fre_Cadaver.png",
+    "radiology": "c_vm1924_fre_Comped.png"
+  }
+}

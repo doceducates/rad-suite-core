@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voxen & Rad Suite — Clinical Icon & Theme Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #121316;
+      --bg-surface: #1a1c22;
+      --bg-elevated: #23262e;
+      --border: #2d313b;
+      --border-focus: #3b82f6;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-clay: #e5e0d8;
+      --accent-wax: #ef4444;
+      --accent-kintsugi: #eab308;
+      --card-bg: #1e2027;
+      --radius: 10px;
+    }
+
+    body.lighting-obsidian {
+      --bg-base: #0a0b0d;
+      --bg-surface: #121316;
+      --bg-elevated: #1a1b20;
+      --card-bg: #14161b;
+      --border: #22242a;
+    }
+
+    body.lighting-daylight {
+      --bg-base: #f1f5f9;
+      --bg-surface: #ffffff;
+      --bg-elevated: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-base);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* Header Bar */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+    }
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Theme Switcher Pills */
+    .theme-pills {
+      display: flex;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .theme-pill {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .theme-pill:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+    }
+    .theme-pill.active {
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .theme-pill[data-theme="clay"].active { background: #3f3f46; color: var(--accent-clay); }
+    .theme-pill[data-theme="wax"].active { background: #7f1d1d; color: #fca5a5; }
+    .theme-pill[data-theme="kintsugi"].active { background: #713f12; color: #fde047; }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-toggle-view {
+      padding: 6px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-toggle-view:hover { background: var(--border); }
+    .btn-toggle-view.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Sub-bar / Filters */
+    .toolbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      width: 240px;
+      outline: none;
+      transition: border 0.15s;
+    }
+    .search-input:focus { border-color: var(--border-focus); }
+
+    .category-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .category-chips::-webkit-scrollbar { display: none; }
+
+    .cat-chip {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .cat-chip:hover { color: var(--text); border-color: var(--text-dim); }
+    .cat-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Gallery Grid */
+    .icons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 16px;
+    }
+
+    .icon-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+    .icon-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-focus);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+    .icon-preview-wrap {
+      width: 110px;
+      height: 110px;
+      border-radius: 8px;
+      background: var(--bg-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .icon-preview-wrap img {
+      width: 86%;
+      height: 86%;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      transition: transform 0.2s ease;
+    }
+    .icon-card:hover .icon-preview-wrap img {
+      transform: scale(1.08);
+    }
+    .icon-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      color: var(--text);
+      word-break: break-word;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .icon-category-tag {
+      font-size: 9px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: var(--bg-base);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Workstation Simulator View */
+    .simulator-container {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .simulator-container.visible {
+      display: flex;
+    }
+
+    .sim-workstation {
+      background: #0f1115;
+      border: 1px solid #232730;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      height: 720px;
+    }
+    .sim-topbar {
+      background: #181b22;
+      border-bottom: 1px solid #282d38;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sim-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sim-tool-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #20242e;
+      border: 1px solid #2f3442;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .sim-tool-btn:hover { background: #2c3240; }
+    .sim-tool-btn img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+    .sim-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sim-sidebar {
+      width: 240px;
+      background: #14171e;
+      border-right: 1px solid #242935;
+      display: flex;
+      flex-direction: column;
+    }
+    .sim-viewports {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+      background: #090a0d;
+      padding: 2px;
+    }
+    .sim-vp {
+      background: #12141a;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #1c202a;
+    }
+    .sim-vp-label {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.7);
+      color: #94a3b8;
+    }
+    .sim-vp.axial .sim-vp-label { border-left: 3px solid #ef4444; color: #fca5a5; }
+    .sim-vp.sagittal .sim-vp-label { border-left: 3px solid #3b82f6; color: #93c5fd; }
+    .sim-vp.coronal .sim-vp-label { border-left: 3px solid #10b981; color: #6ee7b7; }
+    .sim-vp.vrt .sim-vp-label { border-left: 3px solid #f59e0b; color: #fcd34d; }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .modal-img-wrap {
+      width: 200px;
+      height: 200px;
+      border-radius: 12px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .modal-img-wrap img {
+      width: 90%;
+      height: 90%;
+      object-fit: contain;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .modal-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      background: var(--bg-base);
+      padding: 6px 10px;
+      border-radius: 6px;
+      width: 100%;
+      word-break: break-all;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .btn-copy {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-copy:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body class="lighting-slate">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">V</div>
+      <div>
+        <div class="brand-title">Voxen & Rad Suite Clinical Icon Studio</div>
+        <div class="brand-sub">119 Proprietary Clinical Icons · 357 Assets Across 3 Visual Themes</div>
+      </div>
+    </div>
+
+    <!-- Theme Switcher Pills -->
+    <div class="theme-pills">
+      <button class="theme-pill active" data-theme="clay" onclick="setTheme('clay')">
+        <span>🏛️</span> Pure Clinical Clay
+      </button>
+      <button class="theme-pill" data-theme="wax" onclick="setTheme('wax')">
+        <span>🕯️</span> Classical Wax (La Specola)
+      </button>
+      <button class="theme-pill" data-theme="kintsugi" onclick="setTheme('kintsugi')">
+        <span>🏺</span> Matte Obsidian & Gold
+      </button>
+    </div>
+
+    <!-- Actions -->
+    <div class="header-actions">
+      <button id="viewToggle" class="btn-toggle-view" onclick="toggleView()">
+        <span>🖥️</span> Workstation Simulator
+      </button>
+      <button class="btn-toggle-view" onclick="cycleLighting()">
+        <span>💡</span> Ambient Light
+      </button>
+    </div>
+  </header>
+
+  <!-- Toolbar / Category Filter -->
+  <div class="toolbar">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search 119 icons (e.g. brain, pet, cobb)…" oninput="filterIcons()">
+    <div id="categoryChips" class="category-chips"></div>
+  </div>
+
+  <!-- Content -->
+  <main>
+    <!-- Grid Mode -->
+    <div id="iconsGrid" class="icons-grid"></div>
+
+    <!-- Workstation Simulator Mode -->
+    <div id="simContainer" class="simulator-container">
+      <div class="sim-workstation">
+        <!-- Workstation Top Toolbar -->
+        <div class="sim-topbar">
+          <div class="sim-btn-group">
+            <span style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-right: 8px;">RAD WORKSTATION</span>
+            <div class="sim-tool-btn" title="Dual Monitor Split"><img id="simNav1" src="" alt="nav"></div>
+            <div class="sim-tool-btn" title="Tri-Monitor Layout"><img id="simNav2" src="" alt="nav"></div>
+            <div class="sim-tool-btn" title="Prior Study Comparison"><img id="simNav3" src="" alt="nav"></div>
+            <div class="sim-tool-btn" title="3D Spatial Triangulation Lock"><img id="simNav4" src="" alt="nav"></div>
+          </div>
+          <div class="sim-btn-group">
+            <div class="sim-tool-btn" title="Caliper Ruler"><img id="simTool1" src="" alt="tool"></div>
+            <div class="sim-tool-btn" title="Cobb Angle"><img id="simTool2" src="" alt="tool"></div>
+            <div class="sim-tool-btn" title="Cardiothoracic Ratio CTR"><img id="simMeas1" src="" alt="meas"></div>
+            <div class="sim-tool-btn" title="Hounsfield Unit Histogram"><img id="simMeas2" src="" alt="meas"></div>
+            <div class="sim-tool-btn" title="AI Copilot Assistance"><img id="simRep1" src="" alt="rep"></div>
+            <div class="sim-tool-btn" title="Dictation Microphone"><img id="simRep2" src="" alt="rep"></div>
+          </div>
+          <div class="sim-btn-group">
+            <div class="sim-tool-btn" title="Quad MPR Layout"><img id="simVp1" src="" alt="vp"></div>
+            <div class="sim-tool-btn" title="Lung Window Preset"><img id="simVp2" src="" alt="vp"></div>
+            <div class="sim-tool-btn" title="Bone Window Preset"><img id="simVp3" src="" alt="vp"></div>
+          </div>
+        </div>
+
+        <!-- Workstation Body -->
+        <div class="sim-body">
+          <!-- Sidebar Anatomy Drawer -->
+          <div class="sim-sidebar">
+            <div style="padding: 10px 14px; border-bottom: 1px solid #242935; font-size: 11px; font-weight: 700; color: #cbd5e1; display: flex; justify-content: space-between;">
+              <span>ANATOMICAL PARTS</span>
+              <span id="activeThemeBadge" style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #3b82f6; color: #fff;">CLAY</span>
+            </div>
+            <div id="simSideList" style="flex: 1; overflow-y: auto; padding: 8px;"></div>
+          </div>
+
+          <!-- 4-Quadrant Viewports -->
+          <div class="sim-viewports">
+            <div class="sim-vp axial">
+              <span class="sim-vp-label">AXIAL CT (0.625mm)</span>
+              <img id="simVpBg1" style="width: 140px; opacity: 0.85;" src="" alt="organ">
+            </div>
+            <div class="sim-vp sagittal">
+              <span class="sim-vp-label">SAGITTAL MPR</span>
+              <img id="simVpBg2" style="width: 140px; opacity: 0.85;" src="" alt="organ">
+            </div>
+            <div class="sim-vp coronal">
+              <span class="sim-vp-label">CORONAL MPR</span>
+              <img id="simVpBg3" style="width: 140px; opacity: 0.85;" src="" alt="organ">
+            </div>
+            <div class="sim-vp vrt">
+              <span class="sim-vp-label">3D VRT VOLUME RAYMARCH</span>
+              <img id="simVpBg4" style="width: 140px; opacity: 0.85;" src="" alt="organ">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-img-wrap">
+        <img id="modalImg" src="" alt="icon">
+      </div>
+      <div id="modalTitle" class="modal-title">Icon Title</div>
+      <div id="modalCategory" class="icon-category-tag" style="margin-bottom: 12px;">CATEGORY</div>
+      <div id="modalPath" class="modal-path">Path to asset</div>
+      <button class="btn-copy" onclick="copyModalPath()">Copy Asset Path</button>
+    </div>
+  </div>
+
+  <script>
+    const CATALOG = {"version": "1.3.0", "total_unique_icons": 119, "total_files_across_themes": 357, "themes": {"clay": {"name": "Pure Clinical Clay", "description": "Matte ivory stone and medical clay sculpture aesthetic"}, "wax": {"name": "Classical Wax (La Specola)", "description": "Classical polychromatic anatomical wax modeling"}, "kintsugi": {"name": "Matte Obsidian & Gold", "description": "Dark obsidian tissue with radiant gold kintsugi seams"}}, "categories": {"education": {"count": 9, "icons": ["education_compass_rose", "education_flashcard", "education_latin_scroll", "education_leader_pin", "education_mask_overlay", "education_mastery_trophy", "education_scout_projector", "education_solo_spotlight", "education_target_finder"]}, "measurements": {"count": 9, "icons": ["biometric_calcium_score", "biometric_cardiothoracic_ratio", "biometric_cobb_angle", "biometric_hu_histogram", "biometric_perfusion_map", "biometric_stenosis_nascet", "biometric_suv_peak", "biometric_vertebral_height", "biometric_volume_doubling"]}, "modalities": {"count": 12, "icons": ["modality_angio_cath", "modality_c_arm", "modality_ct_gantry", "modality_curved_cpr", "modality_dexa", "modality_mammography", "modality_mip_render", "modality_mri_bore", "modality_pet_ct", "modality_ultrasound_probe", "modality_virtual_endoscopy", "modality_xray_tube"]}, "navigation": {"count": 9, "icons": ["layout_dual_monitor", "layout_floating_magnifier", "layout_fullscreen_theater", "layout_hanging_protocol", "layout_prior_comparison", "layout_reference_scout", "layout_tri_monitor", "sync_spatially_locked", "sync_temporal_cine"]}, "organs": {"count": 12, "icons": ["organ_airway_neck", "organ_ankle_foot", "organ_digestive_tract", "organ_elbow_hand", "organ_heart_vessels", "organ_hip_joint", "organ_knee_joint", "organ_liver_pancreas", "organ_lungs_bronchi", "organ_shoulder", "organ_skull", "organ_urinary_system"]}, "pathologies": {"count": 12, "icons": ["finding_aneurysm", "finding_bone_fracture", "finding_brain_stroke", "finding_coronary_stenosis", "finding_disc_herniation", "finding_gallstones", "finding_joint_arthritis", "finding_kidney_stone", "finding_liver_mass", "finding_lung_nodule", "finding_lymphadenopathy", "finding_pneumothorax"]}, "regions": {"count": 8, "icons": ["region_abdomen", "region_brain", "region_head_neck", "region_lower_limbs", "region_pelvis", "region_spine", "region_thorax", "region_upper_limbs"]}, "reporting": {"count": 9, "icons": ["reporting_ai_copilot", "reporting_blinded_review", "reporting_critical_alert", "reporting_dictation_mic", "reporting_handover_share", "reporting_key_image", "reporting_privacy_shield", "reporting_secure_vault", "reporting_signature_stamp"]}, "submodules": {"count": 12, "icons": ["submodule_bronchial_tree", "submodule_carotid_bifurcation", "submodule_carpal_tunnel", "submodule_circle_of_willis", "submodule_coronary_arteries", "submodule_duodenum_pancreas", "submodule_inner_ear_cochlea", "submodule_knee_meniscus", "submodule_orbit_eye", "submodule_pelvic_floor", "submodule_portal_vein", "submodule_rotator_cuff"]}, "systems": {"count": 9, "icons": ["system_arterial", "system_joints", "system_lymphatic", "system_muscular", "system_nervous", "system_sensory", "system_skeletal", "system_venous", "system_whole_body"]}, "tools": {"count": 9, "icons": ["tool_bone_removal", "tool_caliper_ruler", "tool_cine_scrubber", "tool_cobb_angle", "tool_mpr_crosshair", "tool_roi_sampler", "tool_snapshot_camera", "tool_vessel_tracker", "tool_vrt_cube"]}, "viewports": {"count": 9, "icons": ["preset_window_bone", "preset_window_brain", "preset_window_lung", "preset_window_soft_tissue", "viewport_invert_lut", "viewport_master_1plus3", "viewport_quad_mpr", "viewport_single_1x1", "viewport_sync_link"]}}};
+    let currentTheme = localStorage.getItem('radsuite.atlas_theme') || 'clay';
+    let currentCategory = 'all';
+    let isSimulatorView = false;
+    let lightingIndex = 0;
+    const lightingModes = ['lighting-slate', 'lighting-obsidian', 'lighting-daylight'];
+
+    function getBasePath() {
+      const loc = window.location.href;
+      if (loc.includes('rad-suite-core') || window.location.port === '3000') {
+        return window.location.protocol === 'file:' ? 'icons/atlas/themes' : '/icons/atlas/themes';
+      }
+      return 'assets/anatomy_icons/themes';
+    }
+
+    function init() {
+      renderCategoryChips();
+      setTheme(currentTheme, false);
+      renderIcons();
+      updateSimulator();
+    }
+
+    function setTheme(theme, doRender = true) {
+      currentTheme = theme;
+      localStorage.setItem('radsuite.atlas_theme', theme);
+      localStorage.setItem('voxen.atlas_theme', theme);
+      document.querySelectorAll('.theme-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
+      });
+      document.getElementById('activeThemeBadge').innerText = theme.toUpperCase();
+      if (doRender) {
+        renderIcons();
+        updateSimulator();
+      }
+    }
+
+    function cycleLighting() {
+      lightingIndex = (lightingIndex + 1) % lightingModes.length;
+      document.body.className = lightingModes[lightingIndex];
+    }
+
+    function toggleView() {
+      isSimulatorView = !isSimulatorView;
+      document.getElementById('iconsGrid').style.display = isSimulatorView ? 'none' : 'grid';
+      document.getElementById('simContainer').classList.toggle('visible', isSimulatorView);
+      document.getElementById('viewToggle').classList.toggle('active', isSimulatorView);
+      document.getElementById('viewToggle').innerHTML = isSimulatorView ? '<span>🖼️</span> Icon Grid Gallery' : '<span>🖥️</span> Workstation Simulator';
+      if (isSimulatorView) updateSimulator();
+    }
+
+    function renderCategoryChips() {
+      const container = document.getElementById('categoryChips');
+      container.innerHTML = '';
+      
+      const allChip = document.createElement('button');
+      allChip.className = `cat-chip${currentCategory === 'all' ? ' active' : ''}`;
+      allChip.innerText = `All (${CATALOG.total_unique_icons})`;
+      allChip.onclick = () => { selectCategory('all'); };
+      container.appendChild(allChip);
+
+      Object.entries(CATALOG.categories).forEach(([cat, data]) => {
+        const chip = document.createElement('button');
+        chip.className = `cat-chip${currentCategory === cat ? ' active' : ''}`;
+        chip.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${data.count})`;
+        chip.onclick = () => { selectCategory(cat); };
+        container.appendChild(chip);
+      });
+    }
+
+    function selectCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-chip').forEach(c => {
+        c.classList.toggle('active', c.innerText.toLowerCase().startsWith(cat.toLowerCase()));
+      });
+      renderIcons();
+    }
+
+    function getIconUrl(cat, name) {
+      return `${getBasePath()}/${currentTheme}/${cat}/${name}.png`;
+    }
+
+    function renderIcons() {
+      const grid = document.getElementById('iconsGrid');
+      grid.innerHTML = '';
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      Object.entries(CATALOG.categories).forEach(([cat, data]) => {
+        if (currentCategory !== 'all' && currentCategory !== cat) return;
+
+        data.icons.forEach(name => {
+          if (q && !name.toLowerCase().includes(q) && !cat.toLowerCase().includes(q)) return;
+
+          const card = document.createElement('div');
+          card.className = 'icon-card';
+          card.onclick = () => openModal(cat, name);
+
+          const url = getIconUrl(cat, name);
+          card.innerHTML = `
+            <div class="icon-preview-wrap">
+              <img src="${url}" alt="${name}" loading="lazy">
+            </div>
+            <div class="icon-name">${formatName(name)}</div>
+            <div class="icon-category-tag">${cat}</div>
+          `;
+          grid.appendChild(card);
+        });
+      });
+    }
+
+    function formatName(raw) {
+      return raw.replace(/^(region_|system_|organ_|tool_|submodule_|modality_|finding_|reporting_|viewport_|preset_|education_|biometric_|layout_|sync_)/, '')
+                .replace(/_/g, ' ')
+                .replace(/\w/g, c => c.toUpperCase());
+    }
+
+    function filterIcons() {
+      renderIcons();
+    }
+
+    function openModal(cat, name) {
+      const url = getIconUrl(cat, name);
+      document.getElementById('modalImg').src = url;
+      document.getElementById('modalTitle').innerText = formatName(name);
+      document.getElementById('modalCategory').innerText = `${cat.toUpperCase()} · ${name}.png`;
+      document.getElementById('modalPath').innerText = url;
+      document.getElementById('modalBackdrop').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modalBackdrop').classList.remove('open');
+    }
+
+    function copyModalPath() {
+      const path = document.getElementById('modalPath').innerText;
+      navigator.clipboard.writeText(path).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.innerText = 'Copied to Clipboard!';
+        setTimeout(() => btn.innerText = 'Copy Asset Path', 2000);
+      });
+    }
+
+    function updateSimulator() {
+      // Topbar controls
+      document.getElementById('simNav1').src = getIconUrl('navigation', 'layout_dual_monitor');
+      document.getElementById('simNav2').src = getIconUrl('navigation', 'layout_tri_monitor');
+      document.getElementById('simNav3').src = getIconUrl('navigation', 'layout_prior_comparison');
+      document.getElementById('simNav4').src = getIconUrl('navigation', 'sync_spatially_locked');
+
+      document.getElementById('simTool1').src = getIconUrl('tools', 'tool_caliper_ruler');
+      document.getElementById('simTool2').src = getIconUrl('tools', 'tool_cobb_angle');
+      document.getElementById('simMeas1').src = getIconUrl('measurements', 'biometric_cardiothoracic_ratio');
+      document.getElementById('simMeas2').src = getIconUrl('measurements', 'biometric_hu_histogram');
+      document.getElementById('simRep1').src = getIconUrl('reporting', 'reporting_ai_copilot');
+      document.getElementById('simRep2').src = getIconUrl('reporting', 'reporting_dictation_mic');
+
+      document.getElementById('simVp1').src = getIconUrl('viewports', 'viewport_quad_mpr');
+      document.getElementById('simVp2').src = getIconUrl('viewports', 'preset_window_lung');
+      document.getElementById('simVp3').src = getIconUrl('viewports', 'preset_window_bone');
+
+      // Viewports background heroes
+      document.getElementById('simVpBg1').src = getIconUrl('organs', 'organ_skull');
+      document.getElementById('simVpBg2').src = getIconUrl('organs', 'organ_heart_vessels');
+      document.getElementById('simVpBg3').src = getIconUrl('organs', 'organ_lungs_bronchi');
+      document.getElementById('simVpBg4').src = getIconUrl('tools', 'tool_vrt_cube');
+
+      // Sidebar items
+      const sideList = document.getElementById('simSideList');
+      sideList.innerHTML = '';
+      const sampleItems = [
+        { cat: 'regions', icon: 'region_brain', name: 'Brain & Cranium' },
+        { cat: 'systems', icon: 'system_skeletal', name: 'Skeletal Framework' },
+        { cat: 'systems', icon: 'system_arterial', name: 'Arterial Vasculature' },
+        { cat: 'organs', icon: 'organ_heart_vessels', name: 'Cardiac & Great Vessels' },
+        { cat: 'organs', icon: 'organ_lungs_bronchi', name: 'Pulmonary Tree' },
+        { cat: 'organs', icon: 'organ_liver_pancreas', name: 'Hepatic & Biliary' },
+        { cat: 'pathologies', icon: 'finding_coronary_stenosis', name: 'Coronary Stenosis' },
+        { cat: 'education', icon: 'education_target_finder', name: 'Interactive Quiz Mode' },
+      ];
+
+      sampleItems.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; margin-bottom:4px; cursor:pointer; background:#181b22;';
+        row.innerHTML = `
+          <img src="${getIconUrl(item.cat, item.icon)}" style="width:20px; height:20px; object-fit:contain;">
+          <span style="font-size:11px; color:#e2e8f0; font-weight:500;">${item.name}</span>
+        `;
+        sideList.appendChild(row);
+      });
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

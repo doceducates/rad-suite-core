@@ -1,0 +1,57 @@
+import { CrossSectionalTemplate } from '@/types/templates';
+
+export const CT_NEURO_SPINE_TEMPLATES: CrossSectionalTemplate[] = [
+  {
+    id: 'ct-brain-plain',
+    name: 'CT Brain (Non-Contrast / Emergency Trauma)',
+    modality: 'CT',
+    subspecialty: 'Neuroradiology',
+    subtitle: 'CT BRAIN PLAIN / TRAUMA PROTOCOL',
+    description: 'Standard emergency trauma and stroke non-contrast brain CT.',
+    technique: 'Non-contrast contiguous volumetric axial helical CT from skull base to vertex with 1.25 mm slices and bone/soft tissue reformats.',
+    normalFindings: [
+      'Preserved gray-white matter differentiation bilaterally without loss of insular ribbon definition or focal hypoattenuation.',
+      'No acute intra-axial, intraventricular, subarachnoid, subdural, or epidural intracranial hemorrhage.',
+      'Bilateral basal ganglia, internal capsules, thalami, brainstem, and cerebellar hemispheres demonstrate normal CT attenuation.',
+      'Ventricular system and basal cisterns demonstrate normal age-appropriate caliber and symmetry without hydrocephalus or midline shift.',
+      'Sellar region, major dural venous sinuses, and visualized cavernous sinuses are unremarkable.',
+      'Calvarium and skull base demonstrate intact cortical margins without acute fracture, lytic, or sclerotic lesions.',
+    ],
+    defaultImpression: '1. No acute intracranial hemorrhage, territorial acute infarct, or space-occupying lesion.\n2. Preserved gray-white differentiation with normal ventricular size and no midline shift.\n3. Calvarium and skull base are intact without fracture.',
+  },
+  {
+    id: 'ct-cervical-spine',
+    name: 'CT Cervical Spine (Trauma & Degenerative)',
+    modality: 'CT',
+    subspecialty: 'Neuroradiology',
+    subtitle: 'CT CERVICAL SPINE PROTOCOL',
+    description: 'Helical volumetric CT of the cervical spine from occiput to T1.',
+    technique: 'Volumetric helical acquisition from skull base through T1 with 0.625 mm isotropic voxels and multiplanar sagittal/coronal reformats.',
+    normalFindings: [
+      'Normal cervical lordosis is preserved without traumatic anterolisthesis, retrolisthesis, or subluxation.',
+      'Atlanto-occipital and atlantoaxial articulations are anatomical. Atlantodental interval is normal (<3 mm). Odontoid peg is intact.',
+      'Vertebral body heights and posterior elements are maintained from C1 through T1 without acute fracture.',
+      'Intervertebral disc heights are preserved without high-grade canal or exit foraminal stenosis.',
+      'Prevertebral and retropharyngeal soft tissue thicknesses are within normal limits without hematoma or swelling.',
+    ],
+    defaultImpression: '1. No acute cervical spine fracture, dislocation, or traumatic malalignment.\n2. Intact craniocervical and atlantoaxial junctions.\n3. Maintained spinal canal and neural exit foramina.',
+  },
+  {
+    id: 'ct-lumbar-spine',
+    name: 'CT Lumbar Spine',
+    modality: 'CT',
+    subspecialty: 'Musculoskeletal',
+    subtitle: 'CT LUMBAR SPINE PROTOCOL',
+    description: 'Volumetric CT of the lumbar spine for trauma, pars defects, and osseous alignment.',
+    technique: 'Helical volumetric acquisition from T12 through S2 with thin collimation, bone algorithm filtering, and sagittal/coronal reformations.',
+    normalFindings: [
+      'Normal lumbar lordosis is maintained. Vertebral body heights and cortical margins are preserved from L1 through L5.',
+      'No acute fracture, compression collapse, spondylolysis, or spondylolisthesis identified.',
+      'Pedicles, laminae, transverse processes, and spinous processes are intact bilaterally.',
+      'Intervertebral disc heights are maintained without vacuum phenomenon or advanced degenerative endplate changes.',
+      'Central spinal canal and neural exit foramina demonstrate maintained caliber at all levels.',
+      'Sacroiliac joints and retroperitoneal soft tissues appear unremarkable.',
+    ],
+    defaultImpression: '1. No acute lumbar vertebral fracture, listhesis, or traumatic osseous defect.\n2. Preserved lumbar vertebral alignment and intervertebral disc spaces without high-grade canal or foraminal stenosis.',
+  },
+];

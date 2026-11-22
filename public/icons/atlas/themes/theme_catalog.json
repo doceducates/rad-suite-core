@@ -1,0 +1,200 @@
+{
+  "version": "1.3.0",
+  "total_unique_icons": 119,
+  "total_files_across_themes": 357,
+  "themes": {
+    "clay": {
+      "name": "Pure Clinical Clay",
+      "description": "Matte ivory stone and medical clay sculpture aesthetic"
+    },
+    "wax": {
+      "name": "Classical Wax (La Specola)",
+      "description": "Classical polychromatic anatomical wax modeling"
+    },
+    "kintsugi": {
+      "name": "Matte Obsidian & Gold",
+      "description": "Dark obsidian tissue with radiant gold kintsugi seams"
+    }
+  },
+  "categories": {
+    "education": {
+      "count": 9,
+      "icons": [
+        "education_compass_rose",
+        "education_flashcard",
+        "education_latin_scroll",
+        "education_leader_pin",
+        "education_mask_overlay",
+        "education_mastery_trophy",
+        "education_scout_projector",
+        "education_solo_spotlight",
+        "education_target_finder"
+      ]
+    },
+    "measurements": {
+      "count": 9,
+      "icons": [
+        "biometric_calcium_score",
+        "biometric_cardiothoracic_ratio",
+        "biometric_cobb_angle",
+        "biometric_hu_histogram",
+        "biometric_perfusion_map",
+        "biometric_stenosis_nascet",
+        "biometric_suv_peak",
+        "biometric_vertebral_height",
+        "biometric_volume_doubling"
+      ]
+    },
+    "modalities": {
+      "count": 12,
+      "icons": [
+        "modality_angio_cath",
+        "modality_c_arm",
+        "modality_ct_gantry",
+        "modality_curved_cpr",
+        "modality_dexa",
+        "modality_mammography",
+        "modality_mip_render",
+        "modality_mri_bore",
+        "modality_pet_ct",
+        "modality_ultrasound_probe",
+        "modality_virtual_endoscopy",
+        "modality_xray_tube"
+      ]
+    },
+    "navigation": {
+      "count": 9,
+      "icons": [
+        "layout_dual_monitor",
+        "layout_floating_magnifier",
+        "layout_fullscreen_theater",
+        "layout_hanging_protocol",
+        "layout_prior_comparison",
+        "layout_reference_scout",
+        "layout_tri_monitor",
+        "sync_spatially_locked",
+        "sync_temporal_cine"
+      ]
+    },
+    "organs": {
+      "count": 12,
+      "icons": [
+        "organ_airway_neck",
+        "organ_ankle_foot",
+        "organ_digestive_tract",
+        "organ_elbow_hand",
+        "organ_heart_vessels",
+        "organ_hip_joint",
+        "organ_knee_joint",
+        "organ_liver_pancreas",
+        "organ_lungs_bronchi",
+        "organ_shoulder",
+        "organ_skull",
+        "organ_urinary_system"
+      ]
+    },
+    "pathologies": {
+      "count": 12,
+      "icons": [
+        "finding_aneurysm",
+        "finding_bone_fracture",
+        "finding_brain_stroke",
+        "finding_coronary_stenosis",
+        "finding_disc_herniation",
+        "finding_gallstones",
+        "finding_joint_arthritis",
+        "finding_kidney_stone",
+        "finding_liver_mass",
+        "finding_lung_nodule",
+        "finding_lymphadenopathy",
+        "finding_pneumothorax"
+      ]
+    },
+    "regions": {
+      "count": 8,
+      "icons": [
+        "region_abdomen",
+        "region_brain",
+        "region_head_neck",
+        "region_lower_limbs",
+        "region_pelvis",
+        "region_spine",
+        "region_thorax",
+        "region_upper_limbs"
+      ]
+    },
+    "reporting": {
+      "count": 9,
+      "icons": [
+        "reporting_ai_copilot",
+        "reporting_blinded_review",
+        "reporting_critical_alert",
+        "reporting_dictation_mic",
+        "reporting_handover_share",
+        "reporting_key_image",
+        "reporting_privacy_shield",
+        "reporting_secure_vault",
+        "reporting_signature_stamp"
+      ]
+    },
+    "submodules": {
+      "count": 12,
+      "icons": [
+        "submodule_bronchial_tree",
+        "submodule_carotid_bifurcation",
+        "submodule_carpal_tunnel",
+        "submodule_circle_of_willis",
+        "submodule_coronary_arteries",
+        "submodule_duodenum_pancreas",
+        "submodule_inner_ear_cochlea",
+        "submodule_knee_meniscus",
+        "submodule_orbit_eye",
+        "submodule_pelvic_floor",
+        "submodule_portal_vein",
+        "submodule_rotator_cuff"
+      ]
+    },
+    "systems": {
+      "count": 9,
+      "icons": [
+        "system_arterial",
+        "system_joints",
+        "system_lymphatic",
+        "system_muscular",
+        "system_nervous",
+        "system_sensory",
+        "system_skeletal",
+        "system_venous",
+        "system_whole_body"
+      ]
+    },
+    "tools": {
+      "count": 9,
+      "icons": [
+        "tool_bone_removal",
+        "tool_caliper_ruler",
+        "tool_cine_scrubber",
+        "tool_cobb_angle",
+        "tool_mpr_crosshair",
+        "tool_roi_sampler",
+        "tool_snapshot_camera",
+        "tool_vessel_tracker",
+        "tool_vrt_cube"
+      ]
+    },
+    "viewports": {
+      "count": 9,
+      "icons": [
+        "preset_window_bone",
+        "preset_window_brain",
+        "preset_window_lung",
+        "preset_window_soft_tissue",
+        "viewport_invert_lut",
+        "viewport_master_1plus3",
+        "viewport_quad_mpr",
+        "viewport_single_1x1",
+        "viewport_sync_link"
+      ]
+    }
+  }
+}

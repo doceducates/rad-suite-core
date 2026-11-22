@@ -1,0 +1,61 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Rad Suite",
+  "version": "1.0.0",
+  "identifier": "com.radsuite.workstation",
+  "build": {
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3780/desktop",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Rad Suite — Diagnostic Radiology Workstation",
+        "width": 1600,
+        "height": 1000,
+        "minWidth": 1100,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false,
+        "maximized": true,
+        "additionalBrowserArgs": "--enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --use-gl=angle --use-angle=d3d11 --enable-accelerated-2d-canvas"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "resources/standalone": "standalone"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "startMenuFolder": "Rad Suite"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE1QTNGODlCQkI3MjUxQjMKUldSNkI4ZlZzNDV6Z1pldW9iUjN0aFdtVFl2cm84b1B2WjE2bStwQzF1cmxUeFZ1WWhjTEt3RkYK",
+      "endpoints": [
+        "https://radiology.sehatai.org/api/releases/latest.json",
+        "https://releases.sehatai.org/radsuite/latest.json"
+      ]
+    }
+  }
+}

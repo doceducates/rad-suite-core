@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+*.log
+*.sqlite-journal
+radatlas/cache
+radatlas/*.db
+db_backups/*
+.env.local
+.env*.local
+dist
+coverage
+tests

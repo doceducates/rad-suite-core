@@ -1,0 +1,111 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & Coverage
+coverage/
+test-results/
+.nyc_output/
+
+# Next.js build artifacts
+.next/
+out/
+build/
+dist/
+tsconfig.tsbuildinfo
+.turbo/
+
+# Environment variables & secrets
+.env
+.env*.local
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+radsuite-ai-settings.json
+config/unified-storage.json
+client_secret*.json
+*credentials*.json
+*-client.json
+atlas-client.json
+token.json
+
+# SQLite databases & journals
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+radsuite.db*
+test-radsuite.db*
+db_backups/
+
+# Debug logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.system_generated/
+
+# OS & Editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Local & Hot Storage
+storage/
+storage/cache/
+storage/attachments/
+storage/sim-orthanc/Storage/
+storage/hot-cases/
+
+# Node Registry & Telemetry Cache
+.clinic_*.json
+.test_clinic_*
+test-radsuite-ai-settings.json
+
+# Anatomy Atlas Containers & Data
+radatlas/
+radatlas_cache/
+*.radatlas
+/anatomy/
+
+# Diagnostic & Audit Reports
+audit_report.json
+audit_results.json
+.graphifyignore
+graphify-out/
+.htaccess
+scratch/
+
+# Modular Plugins (Open Core: Proprietary plugins reside in private rad-suite-plugins repo)
+hmis-gateway/
+scripts/clinic-host/data/
+plugins/*
+!plugins/.gitkeep
+!plugins/README.md
+!plugins/sample-workstation-plugin/
+!plugins/sample-workstation-plugin/**
+test-plugins-sandbox/
+
+# Builds and Tauri artifacts
+src-tauri/target/
+src-tauri/gen/
+src-tauri/resources/
+public/releases/
+*.exe
+*.msi
+*.dmg
+*.appimage
+
+# Miscellaneous logs & dumps
+*.dump
+*.tmp

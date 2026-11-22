@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 84" width="380" height="84" fill="none">
+  <defs>
+    <linearGradient id="logo-cyan-l" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="logo-teal-l" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="logo-suite-l" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left Icon Mark -->
+  <g transform="translate(4, 6) scale(0.56)">
+    <rect x="4" y="4" width="120" height="120" rx="28" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/>
+    <circle cx="64" cy="64" r="48" stroke="url(#logo-cyan-l)" stroke-width="2" stroke-dasharray="8 6" stroke-opacity="0.5"/>
+    <circle cx="64" cy="64" r="38" stroke="url(#logo-teal-l)" stroke-width="2.5" stroke-opacity="0.5" stroke-dasharray="20 10 5 10"/>
+    <line x1="64" y1="18" x2="64" y2="28" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="64" y1="100" x2="64" y2="110" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="18" y1="64" x2="28" y2="64" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="100" y1="64" x2="110" y2="64" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <g>
+      <path d="M44 38 C44 36.34 45.34 35 47 35 H52 C53.66 35 55 36.34 55 38 V90 C55 91.66 53.66 93 52 93 H47 C45.34 93 44 91.66 44 90 Z" fill="url(#logo-cyan-l)"/>
+      <path d="M52 35 H72 C81.94 35 90 42.16 90 51 C90 59.84 81.94 67 72 67 H54 V56 H71 C75.97 56 80 53.76 80 51 C80 48.24 75.97 46 71 46 H52 Z" fill="url(#logo-cyan-l)"/>
+      <path d="M68 64 L86.5 89.5 C87.6 91.0 86.8 93 84.8 93 H74.2 C73.1 93 72.1 92.4 71.4 91.5 L56 67 H69 Z" fill="url(#logo-teal-l)"/>
+      <circle cx="70" cy="51" r="5" fill="#0284c7"/>
+      <circle cx="70" cy="51" r="7.5" stroke="#0284c7" stroke-width="1.5" stroke-opacity="0.4"/>
+    </g>
+  </g>
+
+  <!-- Brand Typography -->
+  <g transform="translate(90, 48)">
+    <text font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.03em" fill="#0f172a">
+      Rad <tspan fill="url(#logo-suite-l)">Suite</tspan>
+    </text>
+  </g>
+
+  <!-- Tagline / Subtitle -->
+  <g transform="translate(92, 68)">
+    <text font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, monospace" font-size="9.5" font-weight="600" letter-spacing="0.18em" fill="#64748b">
+      DIAGNOSTIC WORKSTATION
+    </text>
+  </g>
+
+  <!-- Version / Status Pill -->
+  <g transform="translate(268, 25)">
+    <rect width="48" height="18" rx="5" fill="#0284c7" fill-opacity="0.08" stroke="#0284c7" stroke-opacity="0.25" stroke-width="1"/>
+    <text x="24" y="12.5" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#0284c7" text-anchor="middle" letter-spacing="0.05em">
+      ALPHA
+    </text>
+  </g>
+</svg>
