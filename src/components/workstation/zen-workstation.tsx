@@ -6,16 +6,16 @@ import { StitchHeader } from './stitch-header';
 import { StitchViewportStage } from './stitch-viewport-stage';
 import { useReportEditorActions, ReportEditorState } from '@/hooks/use-report-editor-actions';
 import { useReportingLayout } from '@/hooks/use-reporting-layout';
+import { useThreeColumnLayout } from '@/hooks/use-three-column-layout';
+import { useWorkstationStudyClaim } from '@/hooks/use-workstation-study-claim';
 import { CrossSectionalTemplate, HmisNormalTemplate } from '@/types/templates';
 import { DicomTool } from '@/components/dicom/dicom-toolbar';
 import { useWorkstationShortcuts } from '@/hooks/use-workstation-shortcuts';
 import { buildSeriesList, buildReportState } from './workstation-constants';
 import { findingsListToHtml } from '@/lib/clinical-format';
 import { config } from '@/lib/config';
-import { notify } from '@/services/notification.service';
 import { isSectionFilled } from './report-section-dots';
 import { isSameRadiologistUser } from '@/services/unified-case-filters';
-import { executeReleaseCase } from '@/hooks/worklist-case-utils';
 import { useClinicianAttribution } from '@/hooks/use-clinician-attribution';
 import { useCaseLoadingProgress } from '@/hooks/use-case-loading-progress';
 import { usePacsStudyRetrieval } from '@/hooks/use-pacs-study-retrieval';
@@ -42,11 +42,11 @@ export function ZenWorkstation({
   const activeStudy = study || DEFAULT_STUDY;
   const activePatient = patient || (hasStudy ? { ...DEFAULT_PATIENT, fullName: 'Unknown Patient' } : DEFAULT_PATIENT);
 
-  const [currentStudy, setCurrentStudy] = useState(activeStudy); const [currentPatient, setCurrentPatient] = useState(activePatient);
+  const [currentStudy, setCurrentStudy] = useState(activeStudy);
+  const [currentPatient, setCurrentPatient] = useState(activePatient);
   const [isEditingPatient, setIsEditingPatient] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isFolderImportOpen, setIsFolderImportOpen] = useState(false);
-  const [claimingCase, setClaimingCase] = useState(false); const [releasingCase, setReleasingCase] = useState(false);
   const [currentLocalSeries, setCurrentLocalSeries] = useState<any[]>(localSeries);
   const [currentIsLocalCase, setCurrentIsLocalCase] = useState<boolean>(isLocalCase);
   const [currentLocalCaseId, setCurrentLocalCaseId] = useState<string>(localCaseId || activeStudy.accessionNumber || '');
@@ -71,48 +71,10 @@ export function ZenWorkstation({
   const isClaimedByOther = Boolean(assignedRadiologistId && currentUser?.id && !isTakenUpByMe);
   const claimedByName = currentStudy?.assignedRadiologistName || activeStudy?.assignedRadiologistName;
 
-  const handleClaimCurrentStudy = useCallback(async () => {
-    const acc = currentStudy?.accessionNumber || activeStudy?.accessionNumber;
-    if (!acc || !currentUser?.id) return;
-    setClaimingCase(true);
-    try {
-      const res = await fetch(`/api/cases/${encodeURIComponent(acc)}/claim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ radiologistId: currentUser.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) { notify.error(data.error || 'Failed to take up case'); return; }
-      notify.success('Case assigned to your worklist');
-      setCurrentStudy((prev: any) => ({ ...prev, assignedRadiologistId: currentUser.id, assignedRadiologistName: currentUser.name }));
-    } catch (err: any) {
-      notify.error(`Failed to take up case: ${err.message}`);
-    } finally {
-      setClaimingCase(false);
-    }
-  }, [currentStudy?.accessionNumber, activeStudy?.accessionNumber, currentUser?.id, currentUser?.name]);
-
-  const handleReleaseCurrentStudy = useCallback(async () => {
-    const acc = currentStudy?.accessionNumber || activeStudy?.accessionNumber;
-    if (!acc) return;
-    setReleasingCase(true);
-    try {
-      const result = await executeReleaseCase(acc, true);
-      if (result.success) {
-        notify.info('Case released back to HMIS worklist pool');
-        setCurrentStudy((prev: any) => ({ ...prev, assignedRadiologistId: null, assignedRadiologistName: null }));
-      } else {
-        notify.error(result.error || 'Failed to release case');
-      }
-    } catch (err: any) {
-      notify.error(`Failed to release case: ${err.message}`);
-    } finally {
-      setReleasingCase(false);
-    }
-  }, [currentStudy?.accessionNumber, activeStudy?.accessionNumber]);
-
   // 4-Mode Reporting Layout state (FAB, Split, Modal, Full) with persistence across cases
   const { reportingMode, setReportingMode, splitPercent, setSplitPercent, resetSplit, isDragging, setIsDragging } = useReportingLayout();
+  const threeCol = useThreeColumnLayout();
+
   const hasImages = Boolean(currentIsLocalCase || (currentLocalSeries && currentLocalSeries.length > 0));
   const isInitialMountRef = useRef(true);
 
@@ -140,53 +102,24 @@ export function ZenWorkstation({
     setReportingMode(reportingMode === 'fab' ? 'split' : 'fab');
   }, [reportingMode, setReportingMode]);
 
-  // Active series and persistent multi-pane series memory across all layout views
   const [activeSeriesIndex, setActiveSeriesIndex] = useState(0);
   const [seriesSelectToken, setSeriesSelectToken] = useState(0);
   const [paneSeriesMap, setPaneSeriesMap] = useState<Record<number, number>>({ 0: 0, 1: 1, 2: 2, 3: 3 });
-
-  // Default tool: Pan (as requested by radiologist)
   const [tool, setTool] = useState<DicomTool>('pan');
-  const [preset, setPreset] = useState(
-    activeStudy.modality === 'MR' || activeStudy.modality === 'MRI' ? 'mriT2' : 'soft'
-  );
+  const [preset, setPreset] = useState(activeStudy.modality === 'MR' || activeStudy.modality === 'MRI' ? 'mriT2' : 'soft');
   const [isCinePlaying, setIsCinePlaying] = useState(false);
-  const [syncScroll, setSyncScroll] = useState(true); const [scoutLinesActive, setScoutLinesActive] = useState(true);
-  const [invert, setInvert] = useState(false); const [resetKey, setResetKey] = useState(0);
+  const [syncScroll, setSyncScroll] = useState(true);
+  const [scoutLinesActive, setScoutLinesActive] = useState(true);
+  const [invert, setInvert] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
   const [gridConfig, setGridConfig] = useState({ rows: 1, cols: 1 });
-  const [cadActive, setCadActive] = useState(true); const [is3DActive, setIs3DActive] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false); const [isPacsSearchOpen, setIsPacsSearchOpen] = useState(false);
-  const [pacsSearchInitialFilter, setPacsSearchInitialFilter] = useState<'all' | 'me'>('all'); const [uploadingToDrive, setUploadingToDrive] = useState(false);
-  usePacsStudyRetrieval(activeStudy.accessionNumber, currentIsLocalCase, handleSeriesLoaded);
+  const [cadActive, setCadActive] = useState(true);
+  const [is3DActive, setIs3DActive] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isPacsSearchOpen, setIsPacsSearchOpen] = useState(false);
+  const [pacsSearchInitialFilter, setPacsSearchInitialFilter] = useState<'all' | 'me'>('all');
 
-  const handleUploadStudyToGoogleDrive = useCallback(async () => {
-    const acc = currentStudy?.accessionNumber || activeStudy?.accessionNumber;
-    if (!acc) return notify.warning('No active case loaded to upload');
-    setUploadingToDrive(true);
-    const progressId = notify.progress({ title: 'Uploading DICOM study to Google Drive...', current: 1, total: 2, statusText: 'Packaging instances' });
-    try {
-      const res = await fetch('/api/google/upload-case', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessionNumber: acc }),
-      });
-      const data = await res.json();
-      notify.dismiss(progressId);
-      if (!res.ok) return notify.error(data.error || 'Upload to Google Drive failed');
-      notify.success(`Uploaded ${data.fileName || acc} to Google Drive!`);
-      if (data.webViewLink) {
-        notify.info('Study saved to Google Drive', {
-          actionLabel: 'Open in Drive',
-          onAction: () => window.open(data.webViewLink, '_blank'),
-        });
-      }
-    } catch (err: any) {
-      notify.dismiss(progressId);
-      notify.error(err?.message || 'Failed to upload study to Google Drive');
-    } finally {
-      setUploadingToDrive(false);
-    }
-  }, [currentStudy?.accessionNumber, activeStudy?.accessionNumber]);
+  usePacsStudyRetrieval(activeStudy.accessionNumber, currentIsLocalCase, handleSeriesLoaded);
 
   const handleSelectSeries = useCallback((idx: number) => {
     setActiveSeriesIndex(idx);
@@ -202,17 +135,12 @@ export function ZenWorkstation({
   }, []);
 
   useWorkstationShortcuts({
-    isCommandOpen: isPacsSearchOpen,
-    isNotionModalOpen: false,
-    setTool,
-    setInvert,
-    setResetKey,
-    setIsCinePlaying,
+    isCommandOpen: isPacsSearchOpen, isNotionModalOpen: false,
+    setTool, setInvert, setResetKey, setIsCinePlaying,
   });
 
   const [report, setReport] = useState<ReportEditorState>(() => buildReportState(initialReport, activeStudy));
 
-  // Re-sync patient and report state smoothly in-place on case switch
   useEffect(() => {
     setCurrentStudy(activeStudy);
     setCurrentPatient(activePatient);
@@ -236,15 +164,15 @@ export function ZenWorkstation({
 
   const isHmisActive = Boolean(config.hmisGatewayUrl);
 
-  const handleSendToHmisWithAutoClaim = useCallback(async (opts?: { deepVerify?: boolean }) => {
-    if (!isTakenUpByMe && !isClaimedByOther && currentUser?.id) await handleClaimCurrentStudy();
-    return handleSendToHmis(opts);
-  }, [isTakenUpByMe, isClaimedByOther, currentUser?.id, handleClaimCurrentStudy, handleSendToHmis]);
-
-  const handleSubmitToHmisWithAutoClaim = useCallback(async (opts?: { deepVerify?: boolean }) => {
-    if (!isTakenUpByMe && !isClaimedByOther && currentUser?.id) await handleClaimCurrentStudy();
-    return handleSubmitToHmis(opts);
-  }, [isTakenUpByMe, isClaimedByOther, currentUser?.id, handleClaimCurrentStudy, handleSubmitToHmis]);
+  const {
+    claimingCase, releasingCase, uploadingToDrive,
+    handleClaimCurrentStudy, handleReleaseCurrentStudy,
+    handleUploadStudyToGoogleDrive,
+    handleSendToHmisWithAutoClaim, handleSubmitToHmisWithAutoClaim,
+  } = useWorkstationStudyClaim({
+    currentStudy, setCurrentStudy, activeStudy, currentUser,
+    isTakenUpByMe, isClaimedByOther, handleSendToHmis, handleSubmitToHmis,
+  });
 
   const seriesList = hasStudy
     ? buildSeriesList(currentIsLocalCase, currentLocalSeries, activeStudy.modality, (activeStudy as any).studyDescription || (activeStudy as any).scanType || '')
@@ -276,38 +204,43 @@ export function ZenWorkstation({
             onOpenFolderImport={(!hasStudy || reportingMode !== 'full') ? () => setIsFolderImportOpen(true) : undefined}
             currentCaseId={currentLocalCaseId} onOpenMobileNav={() => setMobileNavOpen(true)}
             onEditPatient={hasStudy ? () => setIsEditingPatient(true) : undefined}
-            onReleaseCase={isTakenUpByMe ? handleReleaseCurrentStudy : undefined} isReleasingCase={releasingCase}
             companionStudies={currentStudy?.companionStudies || activeStudy?.companionStudies}
             newerStudies={(currentStudy as any)?.newerStudies || (activeStudy as any)?.newerStudies}
             priorStudies={currentStudy?.priorStudies || activeStudy?.priorStudies}
             onShareCase={hasStudy ? () => setIsShareModalOpen(true) : undefined}
             reportSections={{ history: isSectionFilled(report.clinicalHistory), findings: isSectionFilled(report.findings), impression: isSectionFilled(report.impression) }}
             currentUserId={currentUser?.id}
-            isReviewMode={isReviewMode}
-            onToggleReviewMode={hasStudy && hasImages ? handleToggleReviewMode : undefined}
           />
 
           <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <StitchViewportStage
-            reportingMode={reportingMode} onSelectReportingMode={setReportingMode} splitPercent={splitPercent} onSplitChange={setSplitPercent} onResetSplit={resetSplit}
-            isDraggingSplit={isDragging} setIsDraggingSplit={setIsDragging} study={activeStudy} patient={activePatient}
-            pgrName={pgrName} onPgrNameChange={setPgrName} consultantName={consultantName} onConsultantNameChange={setConsultantName}
-            isLocalCase={currentIsLocalCase} localCaseId={currentLocalCaseId} localSeries={currentLocalSeries} seriesList={seriesList} activeSeriesIndex={activeSeriesIndex} seriesSelectToken={seriesSelectToken}
-            onSelectSeries={handleSelectSeries} onActiveSeriesChange={setActiveSeriesIndex} paneSeriesMap={paneSeriesMap} onUpdatePaneSeries={handleUpdatePaneSeries}
-            tool={tool} onSelectTool={setTool} preset={preset} onSelectPreset={setPreset} isCinePlaying={isCinePlaying} onToggleCine={() => setIsCinePlaying(!isCinePlaying)}
-            syncScroll={syncScroll} onToggleSyncScroll={() => setSyncScroll(!syncScroll)} scoutLinesActive={scoutLinesActive} onToggleScoutLines={() => setScoutLinesActive((p) => !p)} onInvert={() => setInvert((p) => !p)}
-            onReset={() => { setInvert(false); setResetKey((k) => k + 1); }} cadActive={cadActive} onToggleCad={() => setCadActive(!cadActive)} onExport={() => {}}
-            invert={invert} resetKey={resetKey} is3DActive={is3DActive} onToggle3D={() => setIs3DActive((p) => !p)} gridRows={gridConfig.rows} gridCols={gridConfig.cols} onSelectGrid={handleSelectGrid}
-            report={report} setReport={setReport} onOpenCommandPalette={() => { setPacsSearchInitialFilter('all'); setIsPacsSearchOpen(true); }}
-            onStructure={handleStructureWithMedGemma} structuring={structuring} onSave={() => handleSave()} syncStatus={syncStatus} savedTime={savedTime}
-            onSendToHmis={isHmisActive && !isClaimedByOther ? handleSendToHmisWithAutoClaim : undefined} sendingHmis={sendingHmis} onSubmitToHmis={isHmisActive && !isClaimedByOther ? handleSubmitToHmisWithAutoClaim : undefined} submittingHmis={submittingHmis}
-            isFinalSubmitAllowed={Boolean(config.hmisAllowFinalSubmit)}
-            onRevertHmis={isHmisActive && !isClaimedByOther ? handleRevertHmis : undefined} revertingHmis={revertingHmis} onSyncGoogleDoc={handleSyncGoogleDoc} syncingGoogleDoc={syncingGoogleDoc} googleDocUrl={googleDocUrl}
-            isTakenUpByMe={isTakenUpByMe} isClaimedByOther={isClaimedByOther} claimedByName={claimedByName} claimingCase={claimingCase}
-            onClaimCase={hasStudy && !isTakenUpByMe && !isClaimedByOther ? handleClaimCurrentStudy : undefined} hasStudy={hasStudy} recentCases={recentCases}
-            onEditPatient={hasStudy ? () => setIsEditingPatient(true) : undefined} onOpenPacsSearch={() => { setPacsSearchInitialFilter('all'); setIsPacsSearchOpen(true); }}
-            onOpenFolderImport={() => setIsFolderImportOpen(true)} onStartBlankReport={() => setReportingMode('modal')} onUploadGoogleDrive={hasStudy ? handleUploadStudyToGoogleDrive : undefined}
-            uploadingGoogleDrive={uploadingToDrive} currentUser={currentUser} currentVersion={currentVersion} onVersionChange={setCurrentVersion}
+              reportingMode={reportingMode} onSelectReportingMode={setReportingMode} splitPercent={splitPercent} onSplitChange={setSplitPercent} onResetSplit={resetSplit}
+              isDraggingSplit={isDragging} setIsDraggingSplit={setIsDragging} study={activeStudy} patient={activePatient}
+              pgrName={pgrName} onPgrNameChange={setPgrName} consultantName={consultantName} onConsultantNameChange={setConsultantName}
+              isLocalCase={currentIsLocalCase} localCaseId={currentLocalCaseId} localSeries={currentLocalSeries} seriesList={seriesList} activeSeriesIndex={activeSeriesIndex} seriesSelectToken={seriesSelectToken}
+              onSelectSeries={handleSelectSeries} onActiveSeriesChange={setActiveSeriesIndex} paneSeriesMap={paneSeriesMap} onUpdatePaneSeries={handleUpdatePaneSeries}
+              tool={tool} onSelectTool={setTool} preset={preset} onSelectPreset={setPreset} isCinePlaying={isCinePlaying} onToggleCine={() => setIsCinePlaying(!isCinePlaying)}
+              syncScroll={syncScroll} onToggleSyncScroll={() => setSyncScroll(!syncScroll)} scoutLinesActive={scoutLinesActive} onToggleScoutLines={() => setScoutLinesActive((p) => !p)} onInvert={() => setInvert((p) => !p)}
+              onReset={() => { setInvert(false); setResetKey((k) => k + 1); }} cadActive={cadActive} onToggleCad={() => setCadActive(!cadActive)} onExport={() => {}}
+              invert={invert} resetKey={resetKey} is3DActive={is3DActive} onToggle3D={() => setIs3DActive((p) => !p)} gridRows={gridConfig.rows} gridCols={gridConfig.cols} onSelectGrid={handleSelectGrid}
+              report={report} setReport={setReport} onOpenCommandPalette={() => { setPacsSearchInitialFilter('all'); setIsPacsSearchOpen(true); }}
+              onStructure={handleStructureWithMedGemma} structuring={structuring} onSave={() => handleSave()} syncStatus={syncStatus} savedTime={savedTime}
+              onSendToHmis={isHmisActive && !isClaimedByOther ? handleSendToHmisWithAutoClaim : undefined} sendingHmis={sendingHmis} onSubmitToHmis={isHmisActive && !isClaimedByOther ? handleSubmitToHmisWithAutoClaim : undefined} submittingHmis={submittingHmis}
+              isFinalSubmitAllowed={Boolean(config.hmisAllowFinalSubmit)}
+              onRevertHmis={isHmisActive && !isClaimedByOther ? handleRevertHmis : undefined} revertingHmis={revertingHmis} onSyncGoogleDoc={handleSyncGoogleDoc} syncingGoogleDoc={syncingGoogleDoc} googleDocUrl={googleDocUrl}
+              isTakenUpByMe={isTakenUpByMe} isClaimedByOther={isClaimedByOther} claimedByName={claimedByName} claimingCase={claimingCase}
+              onClaimCase={hasStudy && !isTakenUpByMe && !isClaimedByOther ? handleClaimCurrentStudy : undefined} hasStudy={hasStudy} recentCases={recentCases}
+              onEditPatient={hasStudy ? () => setIsEditingPatient(true) : undefined} onOpenPacsSearch={() => { setPacsSearchInitialFilter('all'); setIsPacsSearchOpen(true); }}
+              onOpenFolderImport={() => setIsFolderImportOpen(true)} onStartBlankReport={() => setReportingMode('modal')} onUploadGoogleDrive={hasStudy ? handleUploadStudyToGoogleDrive : undefined}
+              uploadingGoogleDrive={uploadingToDrive} currentUser={currentUser} currentVersion={currentVersion} onVersionChange={setCurrentVersion}
+              centerView={threeCol.centerView}
+              onToggleCenterView={threeCol.toggleCenterView}
+              isRightCompanionOpen={!threeCol.isRightCollapsed}
+              onToggleRightCompanion={threeCol.toggleRightCollapsed}
+              isStageMaximized={threeCol.isStageMaximized}
+              onToggleStageMaximize={threeCol.toggleStageMaximize}
+              rightColTab={threeCol.rightColTab}
+              onSelectRightColTab={threeCol.setRightColTab}
             />
           </main>
 

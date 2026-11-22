@@ -7,6 +7,7 @@ import { useTheme } from '@/components/theme-provider';
 import type { AtlasThemeId } from '@/lib/atlas-icon-map';
 import { emitAtlasThemeChange } from '@/lib/atlas-nav-bus';
 import { notify } from '@/services/notification.service';
+import { useActivePlugins } from '@/hooks/use-active-plugins';
 
 const THEME_OPTIONS: Array<{
   id: AtlasThemeId;
@@ -36,6 +37,8 @@ const THEME_OPTIONS: Array<{
 
 export function WorkstationThemeDropdown() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { isPluginActive } = useActivePlugins();
+  const hasAtlasPlugin = isPluginActive('anatomy-atlas');
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [atlasTheme, setAtlasTheme] = useState<AtlasThemeId>('clay');
@@ -151,55 +154,58 @@ export function WorkstationThemeDropdown() {
             </button>
           </div>
 
-          <div className="my-2 border-t border-border/40" />
+          {/* Section 2: Clinical 3D Aesthetic Theme & Theme Studio (Only when anatomy-atlas plugin active) */}
+          {hasAtlasPlugin && (
+            <>
+              <div className="my-2 border-t border-border/40" />
+              <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Atlas 3D Aesthetic
+              </div>
+              <div className="space-y-1">
+                {THEME_OPTIONS.map((opt) => {
+                  const isSelected = opt.id === atlasTheme;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        handleSelectAtlasTheme(opt.id);
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-foreground hover:bg-muted/60'
+                      }`}
+                    >
+                      <span className="text-base leading-none">{opt.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-xs leading-none truncate">{opt.name}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{opt.desc}</div>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Section 2: Clinical 3D Aesthetic Theme */}
-          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Atlas 3D Aesthetic
-          </div>
-          <div className="space-y-1">
-            {THEME_OPTIONS.map((opt) => {
-              const isSelected = opt.id === atlasTheme;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => {
-                    handleSelectAtlasTheme(opt.id);
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition cursor-pointer ${
-                    isSelected
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-foreground hover:bg-muted/60'
-                  }`}
-                >
-                  <span className="text-base leading-none">{opt.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-xs leading-none truncate">{opt.name}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{opt.desc}</div>
-                  </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
+              <div className="my-2 border-t border-border/40" />
 
-          <div className="my-2 border-t border-border/40" />
-
-          {/* Section 3: Launch Theme Studio */}
-          <a
-            href="/theme_studio.html"
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5 font-medium">
-              <Palette className="w-3.5 h-3.5 text-primary" />
-              <span>Launch Theme Studio</span>
-            </span>
-            <ExternalLink className="w-3 h-3 opacity-60" />
-          </a>
+              {/* Section 3: Launch Theme Studio */}
+              <a
+                href="/theme_studio.html"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Palette className="w-3.5 h-3.5 text-primary" />
+                  <span>Launch Theme Studio</span>
+                </span>
+                <ExternalLink className="w-3 h-3 opacity-60" />
+              </a>
+            </>
+          )}
         </div>
       )}
     </div>

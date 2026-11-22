@@ -3,6 +3,8 @@ import {
   MASTER_TEMPLATE_CATALOG,
   CT_TEMPLATES,
   MRI_TEMPLATES,
+  USG_TEMPLATES,
+  XRAY_TEMPLATES,
   resolveTemplateId,
 } from './templates/catalog.data';
 import { mergeCrossSectionalTemplates } from './template-merger.service';
@@ -41,13 +43,13 @@ export function getTemplateById(id: string): CrossSectionalTemplate | undefined 
 
 export function searchAllTemplates(
   query: string,
-  modality: 'CT' | 'MRI' | 'ALL' = 'ALL',
+  modality: string = 'ALL',
   subspecialty: string = 'ALL'
 ): CrossSectionalTemplate[] {
   const all = getAllTemplatesWithCustom();
   const q = query.toLowerCase().trim();
   return all.filter((t) => {
-    const matchesModality = modality === 'ALL' || t.modality === modality;
+    const matchesModality = modality === 'ALL' || t.modality.toUpperCase() === modality.toUpperCase();
     const matchesSubspecialty = subspecialty === 'ALL' || t.subspecialty === subspecialty;
     const matchesQuery =
       !q ||
@@ -59,7 +61,7 @@ export function searchAllTemplates(
   });
 }
 
-export function getTemplatesByModality(modality: 'CT' | 'MRI' | 'ALL'): CrossSectionalTemplate[] {
+export function getTemplatesByModality(modality: string = 'ALL'): CrossSectionalTemplate[] {
   return searchAllTemplates('', modality);
 }
 
@@ -180,6 +182,26 @@ export function findTemplateForStudy(modality: string = '', studyDescription: st
     return all.find((t) => t.modality === 'MRI');
   }
 
+  const isUsg = mod === 'US' || mod === 'USG' || mod === 'ULTRASOUND' || mod === 'SONO';
+  if (isUsg) {
+    if (/kub|renal|kidney|bladder|prostate|stone/i.test(desc)) return getTemplateById('usg-kub-prostate');
+    if (/neck|thyroid/i.test(desc)) return getTemplateById('usg-neck-thyroid');
+    if (/scrot|testis|testic/i.test(desc)) return getTemplateById('usg-scrotum-doppler');
+    if (/pelvis|uterus|ovary|gyn|tvs/i.test(desc)) return getTemplateById('usg-pelvis-female');
+    if (/hepat|liver|gall|chole|pancreas|cbd/i.test(desc)) return getTemplateById('usg-hepatobiliary-pancreas');
+    if (/breast|sono.*mammo/i.test(desc)) return getTemplateById('usg-breast-bilateral');
+    return getTemplateById('usg-abdomen-pelvis') || all.find((t) => t.modality === 'USG');
+  }
+
+  const isXr = ['CR', 'DX', 'XR', 'X-RAY', 'RADIOGRAPHY'].includes(mod);
+  if (isXr) {
+    if (/chest|thorax|lung/i.test(desc)) return getTemplateById('xr-chest-pa');
+    if (/c-spine|cervical/i.test(desc)) return getTemplateById('xr-cervical-spine');
+    if (/l-spine|lumbar/i.test(desc)) return getTemplateById('xr-lumbar-spine');
+    if (/abdo/i.test(desc)) return getTemplateById('xr-abdomen-erect-supine');
+    return getTemplateById('xr-chest-pa') || all.find((t) => t.modality === 'X-Ray');
+  }
+
   return undefined;
 }
 
@@ -216,6 +238,8 @@ export {
   MASTER_TEMPLATE_CATALOG,
   CT_TEMPLATES,
   MRI_TEMPLATES,
+  USG_TEMPLATES,
+  XRAY_TEMPLATES,
   resolveTemplateId,
   mergeCrossSectionalTemplates,
 };

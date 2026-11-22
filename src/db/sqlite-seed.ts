@@ -50,18 +50,18 @@ export function seedInitialSqliteData(sqlite: any): void {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         '9ce1c37b-22e7-4cdb-83ae-eb14e91fde8a',
-        'Lead Radiologist',
-        process.env.INITIAL_ADMIN_EMAIL || 'admin@radsuite.org',
+        'Dr. Muhammad Mudassir',
+        process.env.INITIAL_ADMIN_EMAIL || 'mudassir@radsuite.pk',
         defaultPassword,
         'admin',
-        'Consultant Radiologist',
+        'Lead Radiologist & System Administrator',
         'RAD-001',
         'Radiology',
         '#4a7c59',
         '1',
         'admin_rad',
         null,
-        'Lead Radiologist',
+        'Dr. Muhammad Mudassir',
         new Date().toISOString()
       );
     }

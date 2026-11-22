@@ -113,6 +113,10 @@ export async function verifySession(token: string): Promise<{ user: User } | nul
     .limit(1);
 
   if (rows[0]?.user) {
+    // Central Authority Remote Kill-Switch: Block disabled accounts immediately
+    if (rows[0].user.status === 'disabled') {
+      return null;
+    }
     return { user: mapDbUserToUser(rows[0].user) };
   }
   return null;
@@ -266,7 +270,18 @@ export async function registerUser(input: RegisterUserInput): Promise<{ user: Us
   let allowedScreens = JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']);
   let inviteCodeUsed: string | undefined = undefined;
 
-  if (input.inviteCode && input.inviteCode.trim().length > 0) {
+  const masterAdminEmails = [
+    'mudassir@radsuite.pk',
+    process.env.INITIAL_ADMIN_EMAIL || 'admin@radsuite.org',
+    process.env.MASTER_ADMIN_EMAIL || '',
+  ].filter(Boolean).map((e) => e.toLowerCase());
+
+  if (masterAdminEmails.includes(emailNorm)) {
+    assignedRole = 'admin';
+    assignedTitle = input.title?.trim() || 'Super Administrator (Lead Radiologist)';
+    assignedStatus = 'active';
+    allowedScreens = JSON.stringify(['*']);
+  } else if (input.inviteCode && input.inviteCode.trim().length > 0) {
     const val = await inviteService.validateInviteCode(input.inviteCode);
     if (!val.valid || !val.invite) {
       throw new Error(val.reason || 'Invalid or expired alpha invite code');

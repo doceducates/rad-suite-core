@@ -25,11 +25,12 @@ fn find_available_port(preferred: u16, fallback_range: std::ops::RangeInclusive<
     if TcpListener::bind(("127.0.0.1", preferred)).is_ok() {
         return preferred;
     }
-    // 2. If preferred port is already active (e.g. running dev server or Rad Suite instance), reuse it
+    // 2. In debug builds, if dev server is already running on preferred port, reuse it
+    #[cfg(debug_assertions)]
     if is_port_reachable(preferred) {
         return preferred;
     }
-    // 3. Search fallback range for first free loopback port
+    // 3. Search fallback range for first free loopback port that can be bound
     for port in fallback_range {
         if TcpListener::bind(("127.0.0.1", port)).is_ok() {
             return port;

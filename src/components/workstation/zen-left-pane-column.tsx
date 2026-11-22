@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { StitchVerticalSeriesRail } from './stitch-vertical-series-rail';
+import { ZenMobileSeriesBar } from './zen-mobile-series-bar';
 import { ZenInframeFloatingToolbar } from './zen-inframe-floating-toolbar';
 import { type StitchSeriesItem } from './stitch-filmstrip';
 import { StitchQuadGrid } from './stitch-quad-grid';
@@ -130,6 +131,17 @@ export function ZenLeftPaneColumn(props: ZenLeftPaneColumnProps) {
 
       {/* 2. Diagnostic Viewport Container with In-Frame Floating HUD */}
       <div className="flex-1 min-h-0 h-full relative overflow-hidden flex flex-col bg-black">
+        {/* Mobile Top Horizontal Series Chips & Drawer Trigger (md:hidden) */}
+        <ZenMobileSeriesBar
+          seriesList={seriesList}
+          activeSeriesIndex={activeSeriesIndex}
+          onSelectSeries={onSelectSeries}
+          modality={study.modality}
+          isLocalCase={isLocalCase}
+          localCaseId={localCaseId}
+          invert={invert}
+        />
+
         {/* In-Frame Floating HUD Toolbar */}
         <ZenInframeFloatingToolbar
           activeTool={tool}

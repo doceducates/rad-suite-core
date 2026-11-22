@@ -4,6 +4,7 @@ import {
   detectReportStyle,
   formatFindingsForStyle,
   convertReportToStyle,
+  formatImpressionForStyle,
 } from '@/services/template-style-engine.service';
 
 describe('template-style-engine', () => {
@@ -59,5 +60,30 @@ describe('template-style-engine', () => {
     expect(converted.style).toBe('categorized_headings');
     expect(converted.findingsHtml).toContain('<h3>Findings</h3>');
     expect(converted.findingsHtml).toContain('<p><strong>L4-L5:</strong> Protrusion</p>');
+  });
+
+  it('formats findings into without_headings style stripping colon headers', () => {
+    const bodyFindings = [
+      'Liver: Normal in size and contour with homogeneous parenchymal attenuation.',
+      'Pleura: No pleural effusion or pneumothorax.',
+      'L4-L5: Preserved disc height. Spinal canal is patent.',
+    ];
+    const formatted = formatFindingsForStyle(bodyFindings, 'without_headings');
+    expect(formatted).toContain('<ul>');
+    expect(formatted).not.toContain('<strong>Liver:</strong>');
+    expect(formatted).toContain('Normal in size and contour');
+    expect(formatted).toContain('No pleural effusion');
+    expect(formatted).toContain('At L4-L5, preserved disc height');
+  });
+
+  it('formats impressions according to impression flavor', () => {
+    const multiBulletImpression = '1. Normal CT chest.\n2. No lymphadenopathy.\n3. Clear lung fields.\n4. No pleural effusion.';
+    const highYield = formatImpressionForStyle(multiBulletImpression, 'local_high_yield');
+    expect(highYield.split('\n').length).toBe(2);
+    expect(highYield).toContain('1. Normal CT chest.');
+    expect(highYield).toContain('2. No lymphadenopathy.');
+
+    const structured = formatImpressionForStyle(multiBulletImpression, 'international_structured');
+    expect(structured.split('\n').length).toBe(4);
   });
 });

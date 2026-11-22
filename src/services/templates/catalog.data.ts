@@ -8,6 +8,8 @@ import { CATALOG_MRI_MSK_UPPER_TEMPLATES } from './catalog-mri-msk-upper.data';
 import { CATALOG_MRI_MSK_LOWER_TEMPLATES } from './catalog-mri-msk-lower.data';
 import { CATALOG_MRI_BODY_TEMPLATES } from './catalog-mri-body.data';
 import { EXTENDED_CLINICAL_TEMPLATES } from './catalog-extended-modalities.data';
+import { CATALOG_USG_TEMPLATES } from './catalog-usg.data';
+import { CATALOG_XRAY_TEMPLATES } from './catalog-xray.data';
 
 export const CT_TEMPLATES: CrossSectionalTemplate[] = [
   ...CATALOG_CT_NEURO_TEMPLATES,
@@ -25,9 +27,19 @@ export const MRI_TEMPLATES: CrossSectionalTemplate[] = [
   ...EXTENDED_CLINICAL_TEMPLATES.filter((t) => t.modality === 'MRI'),
 ];
 
+export const USG_TEMPLATES: CrossSectionalTemplate[] = [
+  ...CATALOG_USG_TEMPLATES,
+];
+
+export const XRAY_TEMPLATES: CrossSectionalTemplate[] = [
+  ...CATALOG_XRAY_TEMPLATES,
+];
+
 export const MASTER_TEMPLATE_CATALOG: CrossSectionalTemplate[] = [
   ...CT_TEMPLATES,
   ...MRI_TEMPLATES,
+  ...USG_TEMPLATES,
+  ...XRAY_TEMPLATES,
 ];
 
 // Transparent bidirectional alias mapping for historical and HMIS IDs

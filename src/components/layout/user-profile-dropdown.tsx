@@ -18,6 +18,7 @@ import { ProfileThemeControls } from './profile-theme-controls';
 import { ProfileHmisControls } from './profile-hmis-controls';
 import { ProfileTasksSubmenu } from './profile-tasks-submenu';
 import { WorkstationGuideModal } from '@/components/workstation/WorkstationGuideModal';
+import { useActivePlugins } from '@/hooks/use-active-plugins';
 import { cn } from '@/lib/utils';
 
 export interface UserProfileDropdownProps {
@@ -41,6 +42,8 @@ export function UserProfileDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { isPluginActive } = useActivePlugins();
+  const hasHmisPlugin = isPluginActive('hmis-gateway');
 
   const isStudentOrAtlas = Boolean(
     isAtlas ||
@@ -155,8 +158,8 @@ export function UserProfileDropdown({
             <ProfileThemeControls onCloseMenu={() => setIsOpen(false)} />
           </div>
 
-          {/* 3. HMIS Gateway & Session Lock Controls (Clinical Workstation Only) */}
-          {!isStudentOrAtlas && (
+          {/* 3. HMIS Gateway & Session Lock Controls (Clinical Workstation Only when HMIS Gateway plugin is active) */}
+          {!isStudentOrAtlas && hasHmisPlugin && (
             <div className="pt-2">
               <ProfileHmisControls onCloseMenu={() => setIsOpen(false)} />
             </div>

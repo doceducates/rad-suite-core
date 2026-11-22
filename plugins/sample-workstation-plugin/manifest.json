@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "description": "An open-source example plugin demonstrating UI slot integration in Rad Suite.",
   "author": "DocEducates Community",
-  "enabled": false,
   "slots": [
     {
       "slotId": "workstation:toolbar",
@@ -16,5 +15,7 @@
   ],
   "permissions": [
     "network"
-  ]
+  ],
+  "enabled": true,
+  "authorized": true
 }

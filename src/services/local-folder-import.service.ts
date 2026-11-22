@@ -44,6 +44,10 @@ export function detectAvailableLocalFolders(): DetectedFolderInfo[] {
   const defaultDir = process.env.LOCAL_CASES_DIR || path.join(process.cwd(), 'cases');
   const candidates: Array<{ path: string; label: string }> = [
     { path: settings.localPath || defaultDir, label: 'Configured Storage Directory' },
+    { path: 'C:/Users/muham/Downloads/cases/My_Cases', label: 'My Cases (Downloads)' },
+    { path: 'C:/Users/muham/Downloads/cases', label: 'Downloads Cases Directory' },
+    { path: 'C:/MedicalSandbox/Cases', label: 'Medical Sandbox Cases' },
+    { path: 'E:/Cases', label: 'External Drive (E:\\Cases)' },
     { path: defaultDir, label: 'Default Workspace Cases Directory' },
   ];
 
@@ -156,7 +160,10 @@ export async function scanAndIndexLocalDirectory(
     // Group key: Use study folder name or slice header UID
     const rel = path.relative(cleanPath, filePath);
     const parts = rel.split(path.sep);
-    const topFolder = parts.length > 1 ? parts[0] : path.basename(cleanPath);
+    let topFolder = parts.length > 1 ? parts[0] : path.basename(cleanPath);
+    if (parts.length > 2 && /^(my_cases|cases|dicom|studies)$/i.test(parts[0])) {
+      topFolder = parts[1];
+    }
     const groupKey = topFolder;
 
     if (!studyGroups.has(groupKey)) {

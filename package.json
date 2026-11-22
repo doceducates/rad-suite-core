@@ -17,6 +17,8 @@
     "tauri": "tauri",
     "hmis:start": "node -e \"const fs=require('fs'); if(fs.existsSync('plugins/hmis-gateway/package.json')){require('child_process').spawnSync('npm', ['--prefix', 'plugins/hmis-gateway', 'start'], {stdio:'inherit',shell:true});}else{console.log('HMIS Gateway plugin is not installed.');}\"",
     "hmis:dev": "node -e \"const fs=require('fs'); if(fs.existsSync('plugins/hmis-gateway/package.json')){require('child_process').spawnSync('npm', ['--prefix', 'plugins/hmis-gateway', 'dev'], {stdio:'inherit',shell:true});}else{console.log('HMIS Gateway plugin is not installed.');}\"",
+    "plugins:dev-link": "node ./scripts/link-dev-plugins.js",
+    "plugins:dev-clean": "node ./scripts/clean-dev-plugins.js",
     "mcp": "tsx src/mcp/cli.ts",
     "build:windows": "node ./scripts/build-dispatcher.js windows",
     "build:android": "node ./scripts/build-dispatcher.js android",

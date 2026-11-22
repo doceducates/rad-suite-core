@@ -90,7 +90,7 @@ export function ZenDicomViewer({
   const [angleMeasurements, setAngleMeasurements] = useState<DicomAngleMeasurement[]>([]);
   const [cobbMeasurements, setCobbMeasurements] = useState<DicomCobbAngleMeasurement[]>([]);
   const [roiMeasurements, setRoiMeasurements] = useState<DicomRoiMeasurement[]>([]);
-  const [glEnabled, setGlEnabled] = useState(true);
+  const [glEnabled, setGlEnabled] = useState(false);
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,7 +136,7 @@ export function ZenDicomViewer({
 
   useDicomCanvasRenderer({
     canvasRef, isRealDcm, parsedSlice, slice, maxSlices, modality, preset: activePresetId, zoom, pan, ww, wc, invert,
-    enabled: !isRealDcm || !parsedSlice || !glEnabled,
+    enabled: !glEnabled || !isRealDcm || !parsedSlice,
   });
 
   const { seriesLabel, orient, seriesNum, currentGeometry } = useZenViewerSync({

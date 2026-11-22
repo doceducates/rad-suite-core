@@ -12,6 +12,8 @@ import { Sparkles, Loader2, Zap, Globe } from 'lucide-react';
 import { notify } from '@/services/notification.service';
 import { ImpressionFlavor } from '@/services/two-tier-impression.service';
 import { buildFindingsWithTechnique } from '@/lib/clinical-format';
+import { ReportingStylePicker } from '@/components/templates/reporting-style-picker';
+import { convertFindingsBetweenStyles } from '@/services/template-style-engine.service';
 
 interface ZenSectionsEditorViewProps {
   report: ReportEditorState;
@@ -175,6 +177,24 @@ export function ZenSectionsEditorView({
           copyContent={findingsWithTechnique}
           richHtml={true}
           copyTitle="Copy Findings (with Technique) to Clipboard"
+          actions={
+            !readOnly && (
+              <div className="flex items-center gap-1.5 ml-2" onClick={(e) => e.stopPropagation()}>
+                <ReportingStylePicker
+                  mode="findings_only"
+                  compact
+                  onStyleChange={(newStyle) => {
+                    if (report.findings && report.findings.trim() !== '') {
+                      const converted = convertFindingsBetweenStyles(report.findings, newStyle);
+                      if (converted !== report.findings) {
+                        setReport((prev) => ({ ...prev, findings: converted }));
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )
+          }
           badge={
             report.criticalFinding ? (
               <span className="font-mono text-[10px] text-error font-bold flex items-center gap-1">
@@ -231,37 +251,11 @@ export function ZenSectionsEditorView({
           actions={
             !readOnly && (
               <div className="flex items-center gap-1.5 ml-2" onClick={(e) => e.stopPropagation()}>
-                <div className="inline-flex items-center rounded-md border border-outline-variant/40 bg-surface-container-low p-0.5 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setFlavor('local_high_yield')}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded font-medium transition-all ${
-                      flavor === 'local_high_yield'
-                        ? 'bg-primary text-on-primary shadow-xs'
-                        : 'text-muted-foreground hover:text-on-surface'
-                    }`}
-                    title="Ultra-concise high-yield impression, age-appropriate, predominant levels"
-                  >
-                    <Zap className="w-2.5 h-2.5" />
-                    <span className="hidden sm:inline">Local High-Yield</span>
-                    <span className="sm:hidden">Local</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFlavor('international_structured')}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded font-medium transition-all ${
-                      flavor === 'international_structured'
-                        ? 'bg-primary text-on-primary shadow-xs'
-                        : 'text-muted-foreground hover:text-on-surface'
-                    }`}
-                    title="ACR/RSNA standard structured impression with formal stenosis grading"
-                  >
-                    <Globe className="w-2.5 h-2.5" />
-                    <span className="hidden sm:inline">Academic ACR</span>
-                    <span className="sm:hidden">ACR</span>
-                  </button>
-                </div>
-
+                <ReportingStylePicker
+                  mode="impression_only"
+                  compact
+                  onStyleChange={(_, flv) => setFlavor(flv)}
+                />
                 <button
                   type="button"
                   onClick={handleGenerateImpression}

@@ -2,25 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  FolderOpen,
-  FolderSearch,
-  HardDrive,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  ExternalLink,
-  UploadCloud,
-  ChevronRight,
-} from 'lucide-react';
-import {
-  Modal,
-  ModalHeader,
-  ModalTitle,
-  ModalDescription,
-  ModalBody,
-  ModalFooter,
-} from '@/components/ui/modal';
+import { FolderOpen, FolderSearch, HardDrive, CheckCircle2, Loader2, ExternalLink, UploadCloud } from 'lucide-react';
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { notify } from '@/services/notification.service';
 import type { DiscoveredStudySummary, DetectedFolderInfo } from '@/services/local-folder-import.service';
@@ -61,9 +44,7 @@ export function LocalFolderImportModal({
         if (data.success && Array.isArray(data.detectedFolders)) {
           setDetectedFolders(data.detectedFolders);
           const firstExisting = data.detectedFolders.find((d: DetectedFolderInfo) => d.exists);
-          if (firstExisting) {
-            setFolderPath(firstExisting.path);
-          }
+          if (firstExisting) setFolderPath(firstExisting.path);
         }
       } catch {}
       setLoadingDetected(false);
@@ -236,27 +217,23 @@ export function LocalFolderImportModal({
           </div>
         </div>
 
-        {/* Browser Directory Upload Alternative */}
+        {/* Browser Directory Upload (Client-side / Web Fallback) */}
         <div
           onClick={() => !scanning && fileInputRef.current?.click()}
-          className="border border-dashed border-outline-variant/70 hover:border-primary/60 bg-surface-container-low/50 hover:bg-surface-container/70 rounded-xl p-3 flex items-center justify-between gap-3 text-secondary text-xs transition-colors cursor-pointer"
+          className="border border-dashed border-outline-variant/70 hover:border-primary/60 bg-surface-container-low/50 hover:bg-surface-container/70 rounded-xl p-2.5 flex items-center justify-between gap-3 text-secondary text-xs transition-colors cursor-pointer"
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <UploadCloud className="w-4 h-4 text-primary shrink-0" />
             <div>
-              <span className="font-semibold text-on-surface">Browse Folder from Computer</span>
-              <p className="text-[11px] text-secondary">Select any USB or network folder via file dialog</p>
+              <span className="font-semibold text-on-surface">Browse Web Folder (Zero-Storage Web Client)</span>
+              <p className="text-[10px] text-secondary">Local client-side parsing; for PC disk use 1-click Scan above</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="pointer-events-none text-xs h-7">
-            Browse...
-          </Button>
+          <Button variant="outline" size="sm" className="pointer-events-none text-xs h-6 px-2">Browse...</Button>
           <input
             ref={fileInputRef}
             type="file"
-            // @ts-expect-error webkitdirectory is standard browser property
-            webkitdirectory=""
-            directory=""
+            {...({ webkitdirectory: '', directory: '' } as any)}
             multiple
             onChange={handleBrowserFolderUpload}
             className="hidden"
@@ -299,10 +276,7 @@ export function LocalFolderImportModal({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => {
-                      onClose();
-                      router.push(`/workstation/${encodeURIComponent(s.accessionNumber)}`);
-                    }}
+                    onClick={() => { onClose(); router.push(`/workstation/${encodeURIComponent(s.accessionNumber)}`); }}
                     className="h-7 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer shrink-0"
                   >
                     <span>Open</span>

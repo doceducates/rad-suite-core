@@ -54,7 +54,7 @@ export function useDicomSliceLoader({
         lastInitializedSeriesRef.current = sNum;
         const mod = (currentSeries?.modality || data.meta.modality || '').toUpperCase();
         const isMr = mod === 'MR' || mod === 'MRI';
-        const hasDummyHeader = (data.meta.windowWidth ?? 0) >= 8191;
+        const hasDummyHeader = (data.meta.windowWidth ?? 0) >= 4095 || (data.meta.windowCenter ?? 0) >= 4095;
 
         if (isMr && data.pixelData && (hasDummyHeader || !data.meta.windowWidth)) {
           const adaptive = computeAdaptiveMrWindow(data.pixelData, {

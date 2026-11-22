@@ -7,6 +7,7 @@ import { useTheme } from '@/components/theme-provider';
 import type { AtlasThemeId } from '@/lib/atlas-icon-map';
 import { emitAtlasThemeChange } from '@/lib/atlas-nav-bus';
 import { notify } from '@/services/notification.service';
+import { useActivePlugins } from '@/hooks/use-active-plugins';
 
 const THEME_OPTIONS: Array<{
   id: AtlasThemeId;
@@ -40,6 +41,8 @@ interface ProfileThemeControlsProps {
 
 export function ProfileThemeControls({ onCloseMenu }: ProfileThemeControlsProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { isPluginActive } = useActivePlugins();
+  const hasAtlasPlugin = isPluginActive('anatomy-atlas');
   const [atlasTheme, setAtlasTheme] = useState<AtlasThemeId>('clay');
 
   useEffect(() => {
@@ -107,51 +110,55 @@ export function ProfileThemeControls({ onCloseMenu }: ProfileThemeControlsProps)
         </button>
       </div>
 
-      {/* 3D Anatomical Atlas Aesthetic */}
-      <div className="pt-1.5">
-        <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-secondary font-mono">
-          Atlas 3D Aesthetic
-        </div>
-        <div className="space-y-0.5">
-          {THEME_OPTIONS.map((opt) => {
-            const isSelected = opt.id === atlasTheme;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => handleSelectAtlasTheme(opt.id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition cursor-pointer ${
-                  isSelected
-                    ? 'bg-primary/15 text-primary font-semibold'
-                    : 'text-on-surface hover:bg-surface-container'
-                }`}
-              >
-                <span className="text-sm leading-none">{opt.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-xs leading-none truncate">{opt.name}</div>
-                  <div className="text-[10px] text-secondary mt-0.5 truncate">{opt.desc}</div>
-                </div>
-                {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* 3D Anatomical Atlas Aesthetic & Theme Studio (Visible only when anatomy-atlas plugin is active) */}
+      {hasAtlasPlugin && (
+        <>
+          <div className="pt-1.5">
+            <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-secondary font-mono">
+              Atlas 3D Aesthetic
+            </div>
+            <div className="space-y-0.5">
+              {THEME_OPTIONS.map((opt) => {
+                const isSelected = opt.id === atlasTheme;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleSelectAtlasTheme(opt.id)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary/15 text-primary font-semibold'
+                        : 'text-on-surface hover:bg-surface-container'
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{opt.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs leading-none truncate">{opt.name}</div>
+                      <div className="text-[10px] text-secondary mt-0.5 truncate">{opt.desc}</div>
+                    </div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Launch Theme Studio */}
-      <a
-        href="/theme_studio.html"
-        target="_blank"
-        rel="noreferrer"
-        onClick={() => onCloseMenu?.()}
-        className="flex items-center justify-between rounded-lg px-2 py-1 text-xs text-secondary hover:bg-surface-container hover:text-on-surface transition cursor-pointer border border-outline-variant/30"
-      >
-        <span className="flex items-center gap-1.5 font-medium">
-          <Palette className="w-3.5 h-3.5 text-primary" />
-          <span>Theme Studio</span>
-        </span>
-        <ExternalLink className="w-3 h-3 opacity-60" />
-      </a>
+          {/* Launch Theme Studio */}
+          <a
+            href="/theme_studio.html"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => onCloseMenu?.()}
+            className="flex items-center justify-between rounded-lg px-2 py-1 text-xs text-secondary hover:bg-surface-container hover:text-on-surface transition cursor-pointer border border-outline-variant/30"
+          >
+            <span className="flex items-center gap-1.5 font-medium">
+              <Palette className="w-3.5 h-3.5 text-primary" />
+              <span>Theme Studio</span>
+            </span>
+            <ExternalLink className="w-3 h-3 opacity-60" />
+          </a>
+        </>
+      )}
     </div>
   );
 }

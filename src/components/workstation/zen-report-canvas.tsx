@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { ReportEditorState, ReportSyncStatus } from '@/hooks/use-report-editor-actions';
 import { ReportingMode } from '@/hooks/use-reporting-layout';
 import { HmisNormalTemplate } from '@/types/templates';
-import { formatFullClinicalReport, findingsListToHtml } from '@/lib/clinical-format';
+import { formatFullClinicalReport } from '@/lib/clinical-format';
+import { useReportingPreferences } from '@/services/reporting-preferences.service';
+import { formatFindingsForStyle, formatImpressionForStyle } from '@/services/template-style-engine.service';
 import { ZenReportHeader } from './zen-report-header';
 import { ZenReportFooter } from './zen-report-footer';
 import { ZenSectionsEditorView } from './zen-sections-editor-view';
@@ -63,8 +65,10 @@ export function ZenReportCanvas({
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false);
   const [reportingTab, setReportingTab] = useState<'standard' | 'discussion'>('standard');
 
+  const { findingsStyle, impressionStyle } = useReportingPreferences();
   const { isPolishingWholeReport, polishNotice, handleQuickPolishWholeReport } = useQuickPolishReport({
     report, setReport, setTemplateRev, modality, studyDescription, patientAge, patientGender, patientName, pgrName,
+    reportStyle: findingsStyle, impressionStyle,
   });
 
   const { handleExportPdf, handleExportDocx, isExporting } = useZenReportExport({
@@ -152,23 +156,13 @@ export function ZenReportCanvas({
       notify.warning('Please click "Take Up Case" to claim this study before applying templates.');
       return;
     }
-    const findingsHtml = findingsListToHtml(tpl.normalFindings);
-    const impressionLines = tpl.defaultImpression
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => `<p>${l}</p>`)
-      .join('');
-    const signatureHtml = pgrName && pgrName.trim() && pgrName.trim() !== 'Resident Radiologist'
+    const findingsHtml = formatFindingsForStyle(tpl.normalFindings, findingsStyle);
+    const styledImpression = formatImpressionForStyle(tpl.defaultImpression, impressionStyle);
+    const impressionLines = styledImpression.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => `<p>${l}</p>`).join('');
+    const signatureHtml = pgrName?.trim() && pgrName.trim() !== 'Resident Radiologist'
       ? `<p><br></p><p><strong>Reported by: </strong><em>${pgrName.trim()}</em></p>`
       : '';
-    const impressionHtml = `${impressionLines}${signatureHtml}`;
-
-    setReport((prev) => ({
-      ...prev,
-      findings: findingsHtml,
-      impression: impressionHtml,
-    }));
+    setReport((prev) => ({ ...prev, findings: findingsHtml, impression: `${impressionLines}${signatureHtml}` }));
     setTemplateRev((r) => r + 1);
   };
 

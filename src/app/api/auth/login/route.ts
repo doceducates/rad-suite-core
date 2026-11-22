@@ -6,6 +6,7 @@ import { verifyPassword, hashPassword, createSession } from '@/services/auth.ser
 import { logAudit } from '@/services/audit.service';
 import { LoginSchema } from '@/lib/validation';
 import { checkRateLimit, recordFailedAttempt, clearRateLimit } from '@/lib/rate-limit';
+import { config } from '@/lib/config';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [user] = await db
+    let [user] = await db
       .select()
       .from(users)
       .where(
@@ -42,6 +43,57 @@ export async function POST(req: NextRequest) {
       )
       .limit(1);
 
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+    const isDesktopOrLocal =
+      process.env.IS_DESKTOP === '1' ||
+      !host ||
+      host.includes('localhost') ||
+      host.includes('127.0.0.1');
+
+    // In Desktop/local mode, if user is not in local SQLite, authenticate against Central Cloud Authority
+    if (!user && isDesktopOrLocal && !host.includes('radiology.sehatai.org')) {
+      try {
+        const cloudRes = await fetch(`${config.centralCloudUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: identifier, password }),
+        });
+
+        if (cloudRes.ok) {
+          const cloudData = await cloudRes.json();
+          if (cloudData.success && cloudData.data) {
+            const cloudUser = cloudData.data;
+            const newHash = await hashPassword(password);
+            await db.insert(users).values({
+              id: cloudUser.id,
+              name: cloudUser.name,
+              email: cloudUser.email.toLowerCase(),
+              passwordHash: newHash,
+              role: cloudUser.role,
+              title: cloudUser.title || (cloudUser.role === 'admin' ? 'Super Administrator' : 'Consultant Radiologist'),
+              status: cloudUser.status || 'active',
+              allowedScreens: JSON.stringify(cloudUser.allowedScreens || ['*']),
+              avatarColor: '#4a7c59',
+              licenseNo: '',
+              department: 'Radiology',
+              createdAt: new Date(),
+            } as any);
+
+            const [synced] = await db.select().from(users).where(eq(users.id, cloudUser.id)).limit(1);
+            user = synced;
+          }
+        } else if (cloudRes.status === 403) {
+          const errData = await cloudRes.json().catch(() => ({}));
+          return NextResponse.json(
+            { success: false, error: errData.error || 'Your account has been suspended by the administrator.' },
+            { status: 403 }
+          );
+        }
+      } catch (cloudErr) {
+        console.warn('[DESKTOP_LOGIN_CLOUD_FALLBACK_WARN]', cloudErr);
+      }
+    }
+
     if (!user) {
       recordFailedAttempt(rateLimitKey);
       return NextResponse.json({ success: false, error: 'Invalid email/username or password' }, { status: 401 });
@@ -51,6 +103,13 @@ export async function POST(req: NextRequest) {
     if (!isValid) {
       recordFailedAttempt(rateLimitKey);
       return NextResponse.json({ success: false, error: 'Invalid email/username or password' }, { status: 401 });
+    }
+
+    if (user.status === 'disabled') {
+      return NextResponse.json(
+        { success: false, error: 'Your account has been suspended by the administrator. Contact Dr. Mudassir for assistance.' },
+        { status: 403 }
+      );
     }
 
     // Clear rate limit on successful credentials

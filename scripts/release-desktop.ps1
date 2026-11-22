@@ -118,7 +118,15 @@ $stagedNestedReleases = Join-Path $tauriResourcesDir "public\releases"
 if (Test-Path $stagedNestedReleases) {
     Remove-Item -Path $stagedNestedReleases -Recurse -Force -ErrorAction SilentlyContinue
 }
-Write-Host "  * Standalone distribution successfully staged for Tauri (excluding releases)." -ForegroundColor Green
+
+# Sanitize public plugins bundle: Public releases must ONLY contain sample-workstation-plugin
+$stagedPluginsDir = Join-Path $tauriResourcesDir "plugins"
+if (Test-Path $stagedPluginsDir) {
+    Get-ChildItem -Path $stagedPluginsDir -Directory | Where-Object { $_.Name -ne "sample-workstation-plugin" } | ForEach-Object {
+        Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+Write-Host "  * Standalone distribution successfully staged for Tauri (excluding releases & proprietary plugins)." -ForegroundColor Green
 
 $outDir = Join-Path $projectRoot "out"
 if (-not (Test-Path $outDir)) {

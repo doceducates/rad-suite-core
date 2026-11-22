@@ -69,14 +69,14 @@ export function ZenCompanionPipPill({
 
       <button
         type="button"
-        onClick={(e) => onSelectTab('ddx', e)}
+        onClick={(e) => onSelectTab('insights_ddx', e)}
         className={cn(
           'px-2 py-1 rounded-full text-xs font-mono flex items-center gap-1 transition-all cursor-pointer',
-          activeTab === 'ddx' ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+          activeTab === 'insights_ddx' ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
         )}
       >
         <Stethoscope className="w-3 h-3" />
-        <span>DDx</span>
+        <span>Insights</span>
       </button>
 
       <button

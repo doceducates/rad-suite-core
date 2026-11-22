@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { PluginRuntimeInfo } from '@/lib/plugins/plugin-types';
 import { PluginCard } from './PluginCard';
+import { emitPluginChange } from '@/hooks/use-active-plugins';
 
 interface PluginManagerSettingsProps {
   isAdmin?: boolean;
@@ -65,6 +66,7 @@ export function PluginManagerSettings({
         throw new Error(data.error || 'Failed to toggle plugin');
       }
       notify.success(`Plugin "${pluginId}" is now ${nextEnabled ? 'enabled' : 'disabled'}.`);
+      emitPluginChange();
       fetchPlugins();
     } catch (err: unknown) {
       notify.error('Failed to toggle plugin state', {

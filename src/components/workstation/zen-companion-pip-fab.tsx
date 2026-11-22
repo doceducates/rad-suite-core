@@ -1,25 +1,38 @@
 'use client';
 
 import React from 'react';
-import { Layers, Stethoscope, MessageSquare, BookOpen, FileText, Sparkles, Move } from 'lucide-react';
+import {
+  Layers,
+  Lightbulb,
+  MessageSquare,
+  BookOpen,
+  CheckSquare,
+  FileText,
+  Compass,
+  Sparkles,
+  Move,
+  PictureInPicture,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanionTab, getCompanionTabLabel } from '@/services/companion-tab.service';
 
-interface ZenCompanionPipFabProps {
-  pillPos: { x: number; y: number } | null;
-  onMouseDown: (e: React.MouseEvent) => void;
-  isPillDragging: boolean;
+export interface ZenCompanionPipFabProps {
+  pillPos?: { x: number; y: number } | null;
+  onMouseDown?: (e: React.MouseEvent) => void;
+  isPillDragging?: boolean;
   onRestore: (e: React.MouseEvent) => void;
+  onPopout?: (e?: React.MouseEvent) => void;
   activeTab: CompanionTab;
   seriesName?: string;
   activeSeriesIndex: number;
 }
 
 export function ZenCompanionPipFab({
-  pillPos,
+  pillPos = null,
   onMouseDown,
-  isPillDragging,
+  isPillDragging = false,
   onRestore,
+  onPopout,
   activeTab,
   seriesName,
   activeSeriesIndex,
@@ -31,33 +44,54 @@ export function ZenCompanionPipFab({
   const renderTabIcon = () => {
     switch (activeTab) {
       case 'images':
-        return <Layers className="w-5 h-5 text-primary" />;
-      case 'ddx':
-        return <Stethoscope className="w-5 h-5 text-primary" />;
+        return <Layers className="w-5 h-5 text-cyan-400" />;
+      case 'insights_ddx':
+        return <Lightbulb className="w-5 h-5 text-amber-400" />;
       case 'chat':
         return <MessageSquare className="w-5 h-5 text-primary" />;
-      case 'guidance':
-        return <BookOpen className="w-5 h-5 text-primary" />;
+      case 'radiopaedia':
+        return <BookOpen className="w-5 h-5 text-violet-400" />;
+      case 'findings':
+        return <CheckSquare className="w-5 h-5 text-emerald-400" />;
+      case 'atlas':
+        return <Compass className="w-5 h-5 text-primary" />;
       case 'report':
       default:
         return <FileText className="w-5 h-5 text-primary" />;
     }
   };
 
-  const tabLabel = activeTab === 'images'
-    ? (seriesName || `Series #${activeSeriesIndex + 1}`)
-    : getCompanionTabLabel(activeTab);
+  const tabLabel =
+    activeTab === 'images'
+      ? seriesName || `Series #${activeSeriesIndex + 1}`
+      : getCompanionTabLabel(activeTab);
 
   return (
     <div
       style={fabStyle}
       onMouseDown={onMouseDown}
       className={cn(
-        'fixed z-50 select-none cursor-move group transition-shadow',
+        'fixed z-50 select-none cursor-move group transition-shadow flex items-center gap-1.5',
         isPillDragging && 'cursor-grabbing ring-2 ring-primary/80 rounded-full'
       )}
       title={`Companion (${tabLabel}) — Click to restore | Drag to move`}
     >
+      {onPopout && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPopout(e);
+          }}
+          className="w-8 h-8 rounded-full bg-surface-container-high/95 backdrop-blur-md border border-outline-variant/60 text-muted-foreground hover:text-primary hover:border-primary shadow-lg flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer"
+          title="Pop out to Floating Window (Alt+3)"
+          aria-label="Pop out to Floating Window"
+        >
+          <PictureInPicture className="w-3.5 h-3.5" />
+        </button>
+      )}
+
       <button
         type="button"
         onClick={onRestore}
@@ -80,8 +114,8 @@ export function ZenCompanionPipFab({
           <Move className="w-2.5 h-2.5" />
         </span>
 
-        {/* Subtle AI Sparkle Accent if in Chat/DDx */}
-        {(activeTab === 'chat' || activeTab === 'ddx') && (
+        {/* AI Sparkle Accent if in Copilot/Insights */}
+        {(activeTab === 'chat' || activeTab === 'insights_ddx') && (
           <span className="absolute -top-1 -left-1 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/90 text-white shadow-2xs">
             <Sparkles className="w-2 h-2" />
           </span>

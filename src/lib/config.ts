@@ -59,6 +59,14 @@ export const config = {
     );
   },
 
+  get centralCloudUrl(): string {
+    return (
+      process.env.CENTRAL_CLOUD_URL ||
+      process.env.NEXT_PUBLIC_CENTRAL_CLOUD_URL ||
+      'https://radiology.sehatai.org'
+    ).replace(/\/$/, '');
+  },
+
   get clinicNodeSecret(): string {
     return process.env.CLINIC_NODE_SECRET || '';
   },

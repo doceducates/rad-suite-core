@@ -170,6 +170,33 @@ When working on specific features, refer to the authoritative documentation file
   - **Centralized Platform Detection**: All platform conditional checks MUST route through standard runtime helpers (`src/lib/platform.ts` / `usePlatform()` / `isDesktopApp()` / `useIsMobile()`). Never scatter raw or fragile user-agent sniffing across feature components.
   - **Component Level Isolation**: If a feature requires platform-specific behavior (e.g. reporting layout, navigation dock, or update banner), extract dedicated sub-components (e.g. `<DesktopUpdateBanner />`, `<ZenReportingFab />`) guarded by platform checks rather than deeply nesting conflicting branching logic in shared core primitives.
 
+## 23. Central Authority & Client Workstation Governance Invariant (Cloud-Managed SaaS Model)
+- **Central Authority as Single Source of Truth**:
+  - The central cloud (`radiology.sehatai.org`) is the SOLE authoritative source of truth for:
+    1. User identity, authentication, and accounts.
+    2. User roles (`admin`, `consultant`, `pgr`, `radiologist`, `student`) and account status (`active`, `waitlisted`, `disabled`).
+    3. Pro feature entitlements, subscriptions, and modular plugin licensing.
+    4. Remote access revocation and immediate kill-switch enforcement.
+- **Zero Autonomous Client Authority (Anti-Bypass Rule)**:
+  - A user who downloads and installs the application on a local PC or device MUST NEVER be automatically promoted to Super Admin simply by virtue of installing the software locally.
+  - Treating local installations as autonomous authorities completely destroys central administrative control and SaaS licensing integrity.
+- **Dr. Muhammad Mudassir as Master Super Admin**:
+  - Dr. Muhammad Mudassir (`mudassir@radsuite.pk` / configured master admin on the central cloud) is the sole permanent Super Admin.
+  - When Dr. Mudassir signs into any client app (Desktop, Android, Web), the client authenticates against `radiology.sehatai.org`, verifies his master `admin` role, and unlocks full administrative, configuration, and testing capabilities.
+- **Client Users Receive Strictly Cloud-Granted Entitlements**:
+  - All client users (clinicians, residents, students) authenticate against the central cloud.
+  - Client apps query the central cloud for the user's role and approved Pro plugins.
+  - If a user is not granted a Pro feature (e.g. Clinical AI Copilot, HMIS Bridge, 3D Anatomy Atlas, PACS Harvester) by Dr. Mudassir from the central dashboard, those features/slots are completely hidden or strictly locked (`"Managed by Hospital Super Admin"`).
+  - Client users cannot elevate themselves to Admin, cannot toggle plugin authorizations, and cannot bypass cloud-enforced entitlements.
+- **Remote Kill-Switch & Account Disabling**:
+  - If Dr. Mudassir disables or revokes a user in the central cloud dashboard (`radiology.sehatai.org/users`), the client app MUST immediately enforce account lockout upon next cloud sync/heartbeat or token refresh.
+- **Offline Workstation Resilience**:
+  - Offline reporting is supported using cryptographically signed, time-limited session tokens (e.g., 7–14 days) and local SQLite caching (`radsuite.db`). When internet connectivity resumes, the client reconnects to `radiology.sehatai.org` to sync reports, verify account active status, and reconcile Pro entitlements.
+- **Public Client Cleanliness Invariant**:
+  - Publicly distributed desktop installers (`.exe`, `.dmg`, `.AppImage`) and mobile binaries (`.apk`) must NEVER bundle proprietary Pro plugins (`hmis-gateway`, `anatomy-atlas`, `clinical-ai`, `clinic-edge`) or hardcoded hospital credentials. Public installers are clean, lightweight client shells. Pro plugins are securely delivered, verified, and unlocked via cloud entitlements.
 
+## 9. Default TipTap Rich Text Editing Invariant
+- **TipTap as Canonical Workstation Editor**: Whenever text editing or rich content entry is implemented across Rad Suite (findings, techniques, impressions, clinical notes, report sections, macros, templates), ALWAYS use the canonical TipTap editor (`@/components/editor/tiptap-editor.tsx`).
+- **Minimal Field Exception**: Raw `<textarea>` or `<input>` is strictly reserved for very small, single-line, or minimal unformatted fields (e.g., patient name, MRN, phone number, simple search inputs). All multi-line clinical content, reporting areas, and template authoring tools MUST utilize TipTap with rich formatting, semantic headers, lists, and highlighting support.
 
 

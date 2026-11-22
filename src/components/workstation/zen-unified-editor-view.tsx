@@ -10,6 +10,8 @@ import { Sparkles, Loader2, Zap, Globe } from 'lucide-react';
 import { notify } from '@/services/notification.service';
 import { ImpressionFlavor } from '@/services/two-tier-impression.service';
 import { buildFindingsWithTechnique } from '@/lib/clinical-format';
+import { ReportingStylePicker } from '@/components/templates/reporting-style-picker';
+import { convertFindingsBetweenStyles } from '@/services/template-style-engine.service';
 
 interface ZenUnifiedEditorViewProps {
   report: ReportEditorState;
@@ -139,6 +141,20 @@ export function ZenUnifiedEditorView({
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
+              {!readOnly && (
+                <ReportingStylePicker
+                  mode="findings_only"
+                  compact
+                  onStyleChange={(newStyle) => {
+                    if (report.findings && report.findings.trim() !== '') {
+                      const converted = convertFindingsBetweenStyles(report.findings, newStyle);
+                      if (converted !== report.findings) {
+                        setReport((prev) => ({ ...prev, findings: converted }));
+                      }
+                    }
+                  }}
+                />
+              )}
               {report.criticalFinding && (
                 <span className="font-mono text-[10px] text-error font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
@@ -183,34 +199,13 @@ export function ZenUnifiedEditorView({
               </span>
 
               {/* Two-Tier Flavor Switcher */}
-              <div className="flex rounded-lg bg-surface-container border border-outline-variant/40 p-0.5 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => setFlavor('local_high_yield')}
-                  className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors ${
-                    flavor === 'local_high_yield'
-                      ? 'bg-primary text-on-primary font-semibold'
-                      : 'text-secondary hover:text-on-surface'
-                  }`}
-                  title="Local High-Yield: Ultra-concise, max 2-3 bullets, age-appropriate (no spondylosis in <30y)"
-                >
-                  <Zap className="w-2.5 h-2.5" />
-                  <span>Local High-Yield</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFlavor('international_structured')}
-                  className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors ${
-                    flavor === 'international_structured'
-                      ? 'bg-primary text-on-primary font-semibold'
-                      : 'text-secondary hover:text-on-surface'
-                  }`}
-                  title="Academic ACR/RSNA: Structured taxonomy with formal stenosis grading"
-                >
-                  <Globe className="w-2.5 h-2.5" />
-                  <span>Academic ACR</span>
-                </button>
-              </div>
+              {!readOnly && (
+                <ReportingStylePicker
+                  mode="impression_only"
+                  compact
+                  onStyleChange={(_, flv) => setFlavor(flv)}
+                />
+              )}
 
               {/* Synthesize Button */}
               <button

@@ -28,105 +28,17 @@ export interface MrRelativePreset {
  * 1. Official Vitrea CT Fixed Presets (calibrated in Hounsfield Units)
  */
 export const VITREA_CT_PRESETS: Record<string, DicomWlPreset> = {
-  soft: {
-    id: 'soft',
-    label: 'CT Soft Tissue (40/400)',
-    wc: 40,
-    ww: 400,
-    modality: 'CT',
-    range: [-160, 240],
-    clinicalUse: 'Standard abdominal, pelvic, thoracic, and neck general anatomy.',
-  },
-  lung: {
-    id: 'lung',
-    label: 'CT Lung (-600/1500)',
-    wc: -600,
-    ww: 1500,
-    modality: 'CT',
-    range: [-1350, 150],
-    clinicalUse: 'Pulmonary parenchyma, nodule screening, emphysema, infiltrates.',
-  },
-  bone: {
-    id: 'bone',
-    label: 'CT Bone (400/2000)',
-    wc: 400,
-    ww: 2000,
-    modality: 'CT',
-    range: [-600, 1400],
-    clinicalUse: 'Cortical bone detail, trabeculae, acute fractures, lytic/sclerotic lesions.',
-  },
-  brain: {
-    id: 'brain',
-    label: 'CT Brain (40/80)',
-    wc: 40,
-    ww: 80,
-    modality: 'CT',
-    range: [0, 80],
-    clinicalUse: 'Gray/white matter differentiation, cerebral edema, mass effect.',
-  },
-  stroke: {
-    id: 'stroke',
-    label: 'CT Stroke / Ischemia (30/30)',
-    wc: 30,
-    ww: 30,
-    modality: 'CT',
-    range: [15, 45],
-    clinicalUse: 'Hyperacute cerebral infarction, loss of insular ribbon, basal ganglia obscuration.',
-  },
-  subdural: {
-    id: 'subdural',
-    label: 'CT Subdural / Blood (75/200)',
-    wc: 75,
-    ww: 200,
-    modality: 'CT',
-    range: [-25, 175],
-    clinicalUse: 'Subdural / epidural hematoma, subarachnoid hemorrhage, blood vs bone.',
-  },
-  liver: {
-    id: 'liver',
-    label: 'CT Liver (30/150)',
-    wc: 30,
-    ww: 150,
-    modality: 'CT',
-    range: [-45, 105],
-    clinicalUse: 'Hepatic metastases, steatosis, cirrhosis, focal nodular hyperplasia.',
-  },
-  angio: {
-    id: 'angio',
-    label: 'CT Angio / Contrast (150/600)',
-    wc: 150,
-    ww: 600,
-    modality: 'CT',
-    range: [-150, 450],
-    clinicalUse: 'CT angiography, arterial phase enhancement, vascular dissection, aneurysm.',
-  },
-  mediastinum: {
-    id: 'mediastinum',
-    label: 'CT Mediastinum (50/350)',
-    wc: 50,
-    ww: 350,
-    modality: 'CT',
-    range: [-125, 225],
-    clinicalUse: 'Hilar and mediastinal lymph nodes, great vessels, cardiac borders.',
-  },
-  spine: {
-    id: 'spine',
-    label: 'CT Spine / Osteo (350/1800)',
-    wc: 350,
-    ww: 1800,
-    modality: 'CT',
-    range: [-550, 1250],
-    clinicalUse: 'Spinal fractures, pedicle screw navigation, posterior element osteophytes.',
-  },
-  temporal_bone: {
-    id: 'temporal_bone',
-    label: 'CT Temporal Bone (700/4000)',
-    wc: 700,
-    ww: 4000,
-    modality: 'CT',
-    range: [-1300, 2700],
-    clinicalUse: 'Ossicular chain, cochlea, semicircular canals, mastoid air cells.',
-  },
+  soft: { id: 'soft', label: 'CT Soft Tissue (40/400)', wc: 40, ww: 400, modality: 'CT', range: [-160, 240], clinicalUse: 'Standard abdominal, pelvic, thoracic, and neck general anatomy.' },
+  lung: { id: 'lung', label: 'CT Lung (-600/1500)', wc: -600, ww: 1500, modality: 'CT', range: [-1350, 150], clinicalUse: 'Pulmonary parenchyma, nodule screening, emphysema, infiltrates.' },
+  bone: { id: 'bone', label: 'CT Bone (400/2000)', wc: 400, ww: 2000, modality: 'CT', range: [-600, 1400], clinicalUse: 'Cortical bone detail, trabeculae, acute fractures, lytic/sclerotic lesions.' },
+  brain: { id: 'brain', label: 'CT Brain (40/80)', wc: 40, ww: 80, modality: 'CT', range: [0, 80], clinicalUse: 'Gray/white matter differentiation, cerebral edema, mass effect.' },
+  stroke: { id: 'stroke', label: 'CT Stroke / Ischemia (30/30)', wc: 30, ww: 30, modality: 'CT', range: [15, 45], clinicalUse: 'Hyperacute cerebral infarction, loss of insular ribbon, basal ganglia obscuration.' },
+  subdural: { id: 'subdural', label: 'CT Subdural / Blood (75/200)', wc: 75, ww: 200, modality: 'CT', range: [-25, 175], clinicalUse: 'Subdural / epidural hematoma, subarachnoid hemorrhage, blood vs bone.' },
+  liver: { id: 'liver', label: 'CT Liver (30/150)', wc: 30, ww: 150, modality: 'CT', range: [-45, 105], clinicalUse: 'Hepatic metastases, steatosis, cirrhosis, focal nodular hyperplasia.' },
+  angio: { id: 'angio', label: 'CT Angio / Contrast (150/600)', wc: 150, ww: 600, modality: 'CT', range: [-150, 450], clinicalUse: 'CT angiography, arterial phase enhancement, vascular dissection, aneurysm.' },
+  mediastinum: { id: 'mediastinum', label: 'CT Mediastinum (50/350)', wc: 50, ww: 350, modality: 'CT', range: [-125, 225], clinicalUse: 'Hilar and mediastinal lymph nodes, great vessels, cardiac borders.' },
+  spine: { id: 'spine', label: 'CT Spine / Osteo (350/1800)', wc: 350, ww: 1800, modality: 'CT', range: [-550, 1250], clinicalUse: 'Spinal fractures, pedicle screw navigation, posterior element osteophytes.' },
+  temporal_bone: { id: 'temporal_bone', label: 'CT Temporal Bone (700/4000)', wc: 700, ww: 4000, modality: 'CT', range: [-1300, 2700], clinicalUse: 'Ossicular chain, cochlea, semicircular canals, mastoid air cells.' },
 };
 
 /**
@@ -234,8 +146,9 @@ export function getAutoWlForSeries(options: AutoWlOptions): {
   const mod = (options.modality || 'CT').toUpperCase();
   const isMR = mod === 'MR' || mod === 'MRI';
 
-  // 1. Prioritize calibrated DICOM Header Window/Level
-  if (options.headerWw && options.headerWc && options.headerWw > 1) {
+  // 1. Prioritize calibrated DICOM Header Window/Level (Ignore uncalibrated/dummy 12-14 bit MR tags)
+  const isDummyMrHeader = isMR && (Number(options.headerWw) >= 4095 || Number(options.headerWc) >= 4095);
+  if (options.headerWw && options.headerWc && options.headerWw > 1 && !isDummyMrHeader) {
     return {
       ww: Math.round(options.headerWw),
       wc: Math.round(options.headerWc),

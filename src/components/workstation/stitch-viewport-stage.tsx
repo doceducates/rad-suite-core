@@ -12,88 +12,40 @@ import { useIsMobile } from '@/hooks/use-is-mobile';
 import { StitchSeriesItem } from './stitch-filmstrip';
 import { DicomTool } from '@/components/dicom/dicom-toolbar';
 import { ReportEditorState, ReportSyncStatus } from '@/hooks/use-report-editor-actions';
+import type { WorkstationCenterView } from '@/hooks/use-three-column-layout';
+import type { CompanionTab } from '@/services/companion-tab.service';
 
 interface StitchViewportStageProps {
-  reportingMode: ReportingMode;
-  onSelectReportingMode: (mode: ReportingMode) => void;
-  splitPercent: number;
-  onSplitChange: (percent: number) => void;
-  onResetSplit: () => void;
-  isDraggingSplit: boolean;
-  setIsDraggingSplit: (val: boolean) => void;
-  study: any;
-  patient?: any;
-  pgrName?: string;
-  isLocalCase: boolean;
-  localCaseId?: string;
-  localSeries?: any[];
-  seriesList: StitchSeriesItem[];
-  activeSeriesIndex: number;
-  seriesSelectToken?: number;
-  onSelectSeries: (idx: number) => void;
-  onActiveSeriesChange?: (seriesIndex: number) => void;
-  paneSeriesMap: Record<number, number>;
-  onUpdatePaneSeries: (paneIdx: number, seriesIdx: number) => void;
-  tool: DicomTool;
-  onSelectTool: (tool: DicomTool) => void;
-  preset: string;
-  onSelectPreset: (preset: string) => void;
-  isCinePlaying: boolean;
-  onToggleCine: () => void;
-  syncScroll?: boolean;
-  onToggleSyncScroll: () => void;
-  scoutLinesActive?: boolean;
-  onToggleScoutLines?: () => void;
-  onInvert: () => void;
-  onReset: () => void;
-  cadActive?: boolean;
-  onToggleCad?: () => void;
-  onExport: () => void;
-  invert?: boolean;
-  resetKey?: number;
-  gridRows?: number;
-  gridCols?: number;
-  onSelectGrid?: (rows: number, cols: number) => void;
-  is3DActive?: boolean;
-  onToggle3D?: () => void;
-  report: ReportEditorState;
-  setReport: React.Dispatch<React.SetStateAction<ReportEditorState>>;
-  onOpenCommandPalette: () => void;
-  onStructure: () => void;
-  structuring: boolean;
-  onSave: () => void;
-  syncStatus?: ReportSyncStatus;
-  savedTime?: string | null;
-  hasStudy?: boolean;
-  onOpenPacsSearch?: () => void;
-  onOpenFolderImport?: () => void;
-  recentCases?: any[];
-  onStartBlankReport?: () => void;
-  currentUser?: any;
-  onSendToHmis?: (options?: { deepVerify?: boolean }) => void;
-  sendingHmis?: boolean;
-  onSubmitToHmis?: (options?: { deepVerify?: boolean }) => void;
-  submittingHmis?: boolean;
-  isFinalSubmitAllowed?: boolean;
-  onRevertHmis?: () => void;
-  revertingHmis?: boolean;
-  hmisNotice?: string | null;
-  onSyncGoogleDoc?: () => void;
-  syncingGoogleDoc?: boolean;
-  googleDocUrl?: string | null;
-  onUploadGoogleDrive?: () => void;
-  uploadingGoogleDrive?: boolean;
-  onEditPatient?: () => void;
-  isTakenUpByMe?: boolean;
-  isClaimedByOther?: boolean;
-  claimedByName?: string;
-  onClaimCase?: () => void;
-  claimingCase?: boolean;
-  onPgrNameChange?: (name: string) => void;
-  consultantName?: string;
-  onConsultantNameChange?: (name: string) => void;
-  currentVersion?: number;
-  onVersionChange?: (version: number) => void;
+  reportingMode: ReportingMode; onSelectReportingMode: (mode: ReportingMode) => void;
+  splitPercent: number; onSplitChange: (percent: number) => void; onResetSplit: () => void;
+  isDraggingSplit: boolean; setIsDraggingSplit: (val: boolean) => void;
+  study: any; patient?: any; pgrName?: string; onPgrNameChange?: (name: string) => void;
+  consultantName?: string; onConsultantNameChange?: (name: string) => void;
+  isLocalCase: boolean; localCaseId?: string; localSeries?: any[];
+  seriesList: StitchSeriesItem[]; activeSeriesIndex: number; seriesSelectToken?: number;
+  onSelectSeries: (idx: number) => void; onActiveSeriesChange?: (seriesIndex: number) => void;
+  paneSeriesMap: Record<number, number>; onUpdatePaneSeries: (paneIdx: number, seriesIdx: number) => void;
+  tool: DicomTool; onSelectTool: (tool: DicomTool) => void; preset: string; onSelectPreset: (preset: string) => void;
+  isCinePlaying: boolean; onToggleCine: () => void; syncScroll?: boolean; onToggleSyncScroll: () => void;
+  scoutLinesActive?: boolean; onToggleScoutLines?: () => void; onInvert: () => void; onReset: () => void;
+  cadActive?: boolean; onToggleCad?: () => void; onExport: () => void;
+  invert?: boolean; resetKey?: number; gridRows?: number; gridCols?: number; onSelectGrid?: (rows: number, cols: number) => void;
+  is3DActive?: boolean; onToggle3D?: () => void;
+  report: ReportEditorState; setReport: React.Dispatch<React.SetStateAction<ReportEditorState>>;
+  onOpenCommandPalette: () => void; onStructure: () => void; structuring: boolean; onSave: () => void;
+  syncStatus?: ReportSyncStatus; savedTime?: string | null; hasStudy?: boolean;
+  onOpenPacsSearch?: () => void; onOpenFolderImport?: () => void; recentCases?: any[]; onStartBlankReport?: () => void;
+  currentUser?: any; onSendToHmis?: (options?: { deepVerify?: boolean }) => void; sendingHmis?: boolean;
+  onSubmitToHmis?: (options?: { deepVerify?: boolean }) => void; submittingHmis?: boolean; isFinalSubmitAllowed?: boolean;
+  onRevertHmis?: () => void; revertingHmis?: boolean; hmisNotice?: string | null;
+  onSyncGoogleDoc?: () => void; syncingGoogleDoc?: boolean; googleDocUrl?: string | null;
+  onUploadGoogleDrive?: () => void; uploadingGoogleDrive?: boolean; onEditPatient?: () => void;
+  isTakenUpByMe?: boolean; isClaimedByOther?: boolean; claimedByName?: string;
+  onClaimCase?: () => void; claimingCase?: boolean; currentVersion?: number; onVersionChange?: (version: number) => void;
+  centerView?: WorkstationCenterView; onToggleCenterView?: () => void;
+  isRightCompanionOpen?: boolean; onToggleRightCompanion?: () => void;
+  isStageMaximized?: boolean; onToggleStageMaximize?: () => void;
+  rightColTab?: CompanionTab; onSelectRightColTab?: (tab: CompanionTab) => void;
 }
 
 export function StitchViewportStage(props: StitchViewportStageProps) {
@@ -132,6 +84,58 @@ export function StitchViewportStage(props: StitchViewportStageProps) {
   };
 
   const activeSeries = props.seriesList[props.activeSeriesIndex];
+
+  const renderCompanionPanel = (docked: boolean) => (
+    <ZenCompanionPanel
+      docked={docked}
+      isOpen={true}
+      activeTab={companionTab}
+      onSelectTab={setCompanionTab}
+      onToggleSplit={() => onSelectReportingMode(docked ? 'modal' : 'split')}
+      onMaximize={() => onSelectReportingMode('full')}
+      onResetSplit={docked ? onResetSplit : undefined}
+      onClose={() => onSelectReportingMode('fab')}
+      accessionNumber={study?.accessionNumber || ''}
+      patientName={props.patient?.fullName || study?.patientName}
+      patientAge={props.patient?.age || study?.age}
+      patientGender={props.patient?.gender || study?.gender}
+      patientMrn={props.patient?.mrNumber || props.patient?.mrn || study?.patientMrn || study?.patientId}
+      studyDescription={study?.studyDescription || study?.scanType}
+      pgrName={props.pgrName || ''}
+      modality={study?.modality || 'CT'}
+      isLocalCase={isLocalCase}
+      localCaseId={localCaseId}
+      localSeries={localSeries}
+      activeSeriesIndex={props.activeSeriesIndex}
+      onSelectSeries={props.onSelectSeries}
+      seriesName={activeSeries?.seriesDescription}
+      report={report}
+      setReport={setReport}
+      studyId={study?.id || ''}
+      onSaveReport={onSave}
+      syncStatus={syncStatus}
+      savedTime={savedTime}
+      findings={report.findings}
+      impression={report.impression}
+      clinicalHistory={report.clinicalHistory}
+      onInsertImpression={handleInsertImpression}
+      onSendToHmis={props.onSendToHmis}
+      sendingHmis={props.sendingHmis}
+      onRevertHmis={props.onRevertHmis}
+      revertingHmis={props.revertingHmis}
+      hmisNotice={props.hmisNotice}
+      onSyncGoogleDoc={props.onSyncGoogleDoc}
+      syncingGoogleDoc={props.syncingGoogleDoc}
+      googleDocUrl={props.googleDocUrl}
+      isTakenUpByMe={props.isTakenUpByMe}
+      isClaimedByOther={props.isClaimedByOther}
+      claimedByName={props.claimedByName}
+      onClaimCase={props.onClaimCase}
+      claimingCase={props.claimingCase}
+      currentVersion={props.currentVersion}
+      onVersionChange={props.onVersionChange}
+    />
+  );
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
@@ -184,6 +188,14 @@ export function StitchViewportStage(props: StitchViewportStageProps) {
             onEditPatient={props.onEditPatient}
             currentVersion={props.currentVersion}
             onVersionChange={props.onVersionChange}
+            centerView={props.centerView}
+            onToggleCenterView={props.onToggleCenterView}
+            isRightCompanionOpen={props.isRightCompanionOpen}
+            onToggleRightCompanion={props.onToggleRightCompanion}
+            isStageMaximized={props.isStageMaximized}
+            onToggleStageMaximize={props.onToggleStageMaximize}
+            rightColTab={props.rightColTab}
+            onSelectRightColTab={props.onSelectRightColTab}
           />
         )}
 
@@ -214,47 +226,7 @@ export function StitchViewportStage(props: StitchViewportStageProps) {
                 setIsDragging={setIsDraggingSplit}
               />
               <div style={{ width: `${100 - splitPercent}%` }} className="h-full min-w-0 flex flex-col border-l border-outline-variant/60">
-                <ZenCompanionPanel
-                  docked={true}
-                  isOpen={true}
-                  activeTab={companionTab}
-                  onSelectTab={setCompanionTab}
-                  onToggleSplit={() => onSelectReportingMode('modal')}
-                  onMaximize={() => onSelectReportingMode('full')}
-                  onResetSplit={onResetSplit}
-                  onClose={() => onSelectReportingMode('fab')}
-                  accessionNumber={study?.accessionNumber || ''}
-                  patientName={props.patient?.fullName || study?.patientName}
-                  patientAge={props.patient?.age || study?.age}
-                  patientGender={props.patient?.gender || study?.gender}
-                  patientMrn={props.patient?.mrNumber || props.patient?.mrn || study?.patientMrn || study?.patientId}
-                  studyDescription={study?.studyDescription || study?.scanType}
-                  pgrName={props.pgrName || ''}
-                  modality={study?.modality || 'CT'}
-                  isLocalCase={isLocalCase}
-                  localCaseId={localCaseId}
-                  localSeries={localSeries}
-                  activeSeriesIndex={props.activeSeriesIndex}
-                  onSelectSeries={props.onSelectSeries}
-                  seriesName={activeSeries?.seriesDescription}
-                  report={report}
-                  setReport={setReport}
-                  studyId={study?.id || ''}
-                  onSaveReport={onSave}
-                  syncStatus={syncStatus}
-                  savedTime={savedTime}
-                  findings={report.findings}
-                  impression={report.impression}
-                  clinicalHistory={report.clinicalHistory}
-                  onInsertImpression={handleInsertImpression}
-                  onSendToHmis={props.onSendToHmis} sendingHmis={props.sendingHmis}
-                  onRevertHmis={props.onRevertHmis} revertingHmis={props.revertingHmis}
-                  hmisNotice={props.hmisNotice} onSyncGoogleDoc={props.onSyncGoogleDoc}
-                  syncingGoogleDoc={props.syncingGoogleDoc} googleDocUrl={props.googleDocUrl}
-                  isTakenUpByMe={props.isTakenUpByMe} isClaimedByOther={props.isClaimedByOther}
-                  claimedByName={props.claimedByName} onClaimCase={props.onClaimCase} claimingCase={props.claimingCase}
-                  currentVersion={props.currentVersion} onVersionChange={props.onVersionChange}
-                />
+                {renderCompanionPanel(true)}
               </div>
             </>
           )
@@ -275,48 +247,7 @@ export function StitchViewportStage(props: StitchViewportStageProps) {
               />
             )}
 
-            {reportingMode === 'modal' && (
-              <ZenCompanionPanel
-                docked={false}
-                isOpen={true}
-                activeTab={companionTab}
-                onSelectTab={setCompanionTab}
-                onToggleSplit={() => onSelectReportingMode('split')}
-                onMaximize={() => onSelectReportingMode('full')}
-                onClose={() => onSelectReportingMode('fab')}
-                accessionNumber={study?.accessionNumber || ''}
-                patientName={props.patient?.fullName || study?.patientName}
-                patientAge={props.patient?.age || study?.age}
-                patientGender={props.patient?.gender || study?.gender}
-                patientMrn={props.patient?.mrNumber || props.patient?.mrn || study?.patientMrn || study?.patientId}
-                studyDescription={study?.studyDescription || study?.scanType}
-                pgrName={props.pgrName || ''}
-                modality={study?.modality || 'CT'}
-                isLocalCase={isLocalCase}
-                localCaseId={localCaseId}
-                localSeries={localSeries}
-                activeSeriesIndex={props.activeSeriesIndex}
-                onSelectSeries={props.onSelectSeries}
-                seriesName={activeSeries?.seriesDescription}
-                report={report}
-                setReport={setReport}
-                studyId={study?.id || ''}
-                onSaveReport={onSave}
-                syncStatus={syncStatus}
-                savedTime={savedTime}
-                findings={report.findings}
-                impression={report.impression}
-                clinicalHistory={report.clinicalHistory}
-                onInsertImpression={handleInsertImpression}
-                onSendToHmis={props.onSendToHmis} sendingHmis={props.sendingHmis}
-                onRevertHmis={props.onRevertHmis} revertingHmis={props.revertingHmis}
-                hmisNotice={props.hmisNotice} onSyncGoogleDoc={props.onSyncGoogleDoc}
-                syncingGoogleDoc={props.syncingGoogleDoc} googleDocUrl={props.googleDocUrl}
-                isTakenUpByMe={props.isTakenUpByMe} isClaimedByOther={props.isClaimedByOther}
-                claimedByName={props.claimedByName} onClaimCase={props.onClaimCase} claimingCase={props.claimingCase}
-                currentVersion={props.currentVersion} onVersionChange={props.onVersionChange}
-              />
-            )}
+            {reportingMode === 'modal' && renderCompanionPanel(false)}
           </div>
         )}
       </div>

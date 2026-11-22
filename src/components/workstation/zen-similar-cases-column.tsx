@@ -56,7 +56,7 @@ export function ZenSimilarCasesColumn({
   width,
   onInsertText,
   isResizing = false,
-  activeTab = 'insights',
+  activeTab = 'insights_ddx',
   onSelectTab,
   onOpenTab,
   findings = '',
@@ -77,7 +77,7 @@ export function ZenSimilarCasesColumn({
   onSave,
   currentVersion,
 }: ZenSimilarCasesColumnProps) {
-  const currentTab = activeTab || 'insights';
+  const currentTab = activeTab || 'insights_ddx';
 
   const handleOpenSpecificTab = (tab: RightColTab) => {
     if (onOpenTab) {
@@ -117,13 +117,13 @@ export function ZenSimilarCasesColumn({
             <CheckSquare className="w-4 h-4 text-amber-400" />
           </button>
 
-          {/* 1-Click Launch Case Insights */}
+          {/* 1-Click Launch Case Insights & DDx */}
           <button
             type="button"
-            onClick={() => handleOpenSpecificTab('insights')}
+            onClick={() => handleOpenSpecificTab('insights_ddx')}
             className={cn(
               'p-2 rounded-lg transition-all cursor-pointer flex flex-col items-center gap-1 group',
-              currentTab === 'insights'
+              currentTab === 'insights_ddx'
                 ? 'bg-primary/15 text-primary shadow-xs'
                 : 'text-secondary hover:text-primary hover:bg-surface-container'
             )}
@@ -148,7 +148,7 @@ export function ZenSimilarCasesColumn({
           </button>
 
           <span className="text-[10px] font-mono text-secondary rotate-90 whitespace-nowrap mt-12 tracking-wider uppercase font-semibold">
-            {currentTab === 'findings' ? 'Positive Findings' : currentTab === 'insights' ? 'Case Insights' : 'Radiopaedia'}
+            {currentTab === 'findings' ? 'Positive Findings' : currentTab === 'insights_ddx' ? 'Case Insights' : 'Radiopaedia'}
           </span>
         </div>
       </div>
@@ -184,16 +184,16 @@ export function ZenSimilarCasesColumn({
 
           <button
             type="button"
-            onClick={() => onSelectTab && onSelectTab('insights')}
+            onClick={() => onSelectTab && onSelectTab('insights_ddx')}
             className={cn(
               'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap',
-              currentTab === 'insights'
+              currentTab === 'insights_ddx'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-secondary hover:text-on-surface'
             )}
             title="Ranked differentials, viva talking points, and recommended investigations"
           >
-            <Lightbulb className={cn('w-3 h-3', currentTab === 'insights' ? 'text-amber-300' : 'text-amber-500')} />
+            <Lightbulb className={cn('w-3 h-3', currentTab === 'insights_ddx' ? 'text-amber-300' : 'text-amber-500')} />
             <span>Insights</span>
           </button>
 
@@ -241,7 +241,7 @@ export function ZenSimilarCasesColumn({
             currentVersion={currentVersion}
             initialFindings={findings}
           />
-        ) : currentTab === 'insights' ? (
+        ) : currentTab === 'insights_ddx' ? (
           <CaseInsightsView
             findings={findings}
             impression={impression}

@@ -3,6 +3,8 @@ import {
   MASTER_TEMPLATE_CATALOG,
   CT_TEMPLATES,
   MRI_TEMPLATES,
+  USG_TEMPLATES,
+  XRAY_TEMPLATES,
   getTemplateById,
   getTemplatesByModality,
   findTemplateForStudy,
@@ -14,7 +16,9 @@ describe('Unified Single Source of Truth Template Service (Option B)', () => {
   it('should load all modular templates into the unified catalog', () => {
     expect(CT_TEMPLATES.length).toBe(24);
     expect(MRI_TEMPLATES.length).toBe(43);
-    expect(MASTER_TEMPLATE_CATALOG.length).toBe(67);
+    expect(USG_TEMPLATES.length).toBe(7);
+    expect(XRAY_TEMPLATES.length).toBe(4);
+    expect(MASTER_TEMPLATE_CATALOG.length).toBe(78);
   });
 
   it('all templates must strictly adhere to Option B clean clinical paragraphs without unparsed placeholders', () => {

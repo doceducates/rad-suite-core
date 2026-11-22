@@ -4,47 +4,21 @@ import { getOrientationFromIop, detectOrientationFromDescription } from './dicom
 import { parseSliceHeader, parseStudyHeader } from './dicom-header-reader';
 
 export interface LocalSeriesInfo {
-  seriesNumber: string;
-  seriesDescription: string;
-  orientation: 'AXIAL' | 'SAGITTAL' | 'CORONAL';
-  sliceCount: number;
-  files: string[];
-  firstIpp?: [number, number, number];
-  lastIpp?: [number, number, number];
-  iop?: number[];
-  pixelSpacing?: [number, number];
-  rows?: number;
-  columns?: number;
+  seriesNumber: string; seriesDescription: string; orientation: 'AXIAL' | 'SAGITTAL' | 'CORONAL';
+  sliceCount: number; files: string[]; firstIpp?: [number, number, number]; lastIpp?: [number, number, number];
+  iop?: number[]; pixelSpacing?: [number, number]; rows?: number; columns?: number;
 }
 
 export interface LocalCaseStudy {
-  id: string;
-  patientName: string;
-  patientId: string;
-  accessionNumber: string;
-  modality: string;
-  studyDescription: string;
-  studyDate: string;
-  studyTime?: string;
-  dateOfBirth?: string;
-  examId?: string;
-  referringPhysician?: string;
-  age: number;
-  gender: 'Male' | 'Female' | 'Other';
-  studyInstanceUid: string;
-  numInstances: number;
-  folderPath: string;
-  series: LocalSeriesInfo[];
+  id: string; patientName: string; patientId: string; accessionNumber: string; modality: string;
+  studyDescription: string; studyDate: string; studyTime?: string; dateOfBirth?: string;
+  examId?: string; referringPhysician?: string; age: number; gender: 'Male' | 'Female' | 'Other';
+  studyInstanceUid: string; numInstances: number; folderPath: string; series: LocalSeriesInfo[];
 }
 
 interface SliceMeta {
-  file: string;
-  instanceNumber: number;
-  ipp?: [number, number, number];
-  iop?: number[];
-  pixelSpacing?: [number, number];
-  rows?: number;
-  columns?: number;
+  file: string; instanceNumber: number; ipp?: [number, number, number]; iop?: number[];
+  pixelSpacing?: [number, number]; rows?: number; columns?: number;
 }
 
 const DEFAULT_CASES_DIR = process.env.CASES_DIR || path.join(process.cwd(), 'cases');
@@ -78,7 +52,9 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
       process.env.CASES_DIR,
       process.env.LOCAL_CASES_DIR,
       'C:/MedicalSandbox/Cases',
+      'C:/Users/muham/Downloads/cases/My_Cases',
       'C:/Users/muham/Downloads/cases',
+      'E:/Cases',
       DEFAULT_CASES_DIR,
     ].filter(Boolean) as string[];
     for (const d of candidates) {
@@ -88,7 +64,7 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
   if (targetDirs.length === 0) return [];
 
   const cacheKey = targetDirs.join(';');
-  if (!forceRefresh && cachedCases && cacheKey === lastScanDir && Date.now() - lastScanTime < 10000) {
+  if (!forceRefresh && cachedCases && cacheKey === lastScanDir && Date.now() - lastScanTime < 15000) {
     return cachedCases;
   }
 
@@ -97,16 +73,32 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
   for (const targetDir of targetDirs) {
     try {
       const caseDirs = rfs.readdirSync(targetDir);
+      const effectiveDirs: Array<{ path: string; name: string }> = [];
 
-    for (const dirName of caseDirs) {
-      const casePath = path.join(/*turbopackIgnore: true*/ targetDir, dirName);
-      let stat: fs.Stats;
-      try {
-        stat = rfs.statSync(casePath);
-        if (!stat.isDirectory()) continue;
-      } catch {
-        continue;
+      for (const dirName of caseDirs) {
+        const casePath = path.join(targetDir, dirName);
+        try {
+          const s = rfs.statSync(casePath);
+          if (!s.isDirectory()) continue;
+          if (/^(my_cases|cases|dicom|studies)$/i.test(dirName)) {
+            const subs = rfs.readdirSync(casePath);
+            for (const sub of subs) {
+              const subP = path.join(casePath, sub);
+              if (rfs.statSync(subP).isDirectory()) effectiveDirs.push({ path: subP, name: sub });
+            }
+          } else {
+            effectiveDirs.push({ path: casePath, name: dirName });
+          }
+        } catch {}
       }
+
+      for (const { path: casePath, name: dirName } of effectiveDirs) {
+        let stat: fs.Stats;
+        try {
+          stat = rfs.statSync(casePath);
+        } catch {
+          continue;
+        }
 
       // Recursively gather all DICOM files under casePath
       const allFiles: string[] = [];
@@ -252,23 +244,14 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
         studyMeta.gender === 'F' ? 'Female' : studyMeta.gender === 'M' ? 'Male' : 'Other';
 
       results.push({
-        id: caseId,
-        patientName: studyMeta.patientName,
-        patientId: studyMeta.patientId,
-        accessionNumber: studyMeta.accessionNumber,
-        modality: studyMeta.modality,
-        studyDescription: studyMeta.studyDescription,
+        id: caseId, patientName: studyMeta.patientName, patientId: studyMeta.patientId,
+        accessionNumber: studyMeta.accessionNumber, modality: studyMeta.modality,
+        studyDescription: studyMeta.studyDescription, studyTime: studyMeta.studyTime,
         studyDate: formatDicomDate(studyMeta.studyDate, studyMeta.studyTime, stat.mtime),
-        studyTime: studyMeta.studyTime,
-        dateOfBirth: studyMeta.dateOfBirth,
-        examId: studyMeta.examId,
-        referringPhysician: studyMeta.referringPhysician,
-        age,
-        gender,
-        studyInstanceUid: studyMeta.studyInstanceUid,
-        numInstances: allFiles.length,
-        folderPath: studyFolder,
-        series: seriesList,
+        dateOfBirth: studyMeta.dateOfBirth, examId: studyMeta.examId,
+        referringPhysician: studyMeta.referringPhysician, age, gender,
+        studyInstanceUid: studyMeta.studyInstanceUid, numInstances: allFiles.length,
+        folderPath: studyFolder, series: seriesList,
       });
     }
   } catch (err) {

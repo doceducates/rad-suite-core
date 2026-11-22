@@ -15,6 +15,7 @@ import {
   Users,
   BookOpen,
   ListTodo,
+  LayoutTemplate,
 } from 'lucide-react';
 
 import type { UserRole } from '@/types';
@@ -42,7 +43,8 @@ export const NAV_ITEMS: NavItemDef[] = [
   // Clinical Core
   { id: 'dashboard', href: '/dashboard', label: 'Command Center', icon: LayoutDashboard, category: 'clinical', shortcut: '1' },
   { id: 'my_cases', href: '/my-cases', label: 'My Cases', icon: CheckSquare, category: 'clinical', badge: 'Active', shortcut: '2' },
-  { id: 'worklist', href: '/worklist', label: 'HMIS', icon: FileText, category: 'clinical', shortcut: '3' },
+  { id: 'worklist', href: '/worklist', label: 'Worklist', icon: FileText, category: 'clinical', shortcut: '3' },
+  { id: 'templates', href: '/templates', label: 'Templates', icon: LayoutTemplate, category: 'clinical', shortcut: '9' },
   { id: 'pacs', href: '/pacs', label: 'PACS', icon: HardDrive, category: 'clinical', shortcut: '4' },
   { id: 'workspace', href: '/workspace', label: 'Workspace', icon: Activity, category: 'clinical', shortcut: '5' },
 
@@ -64,6 +66,7 @@ export function isRouteActive(pathname: string, href: string): boolean {
   if (href === '/dashboard' && (pathname === '/dashboard' || pathname === '/')) return true;
   if (href === '/my-cases' && (pathname === '/my-cases' || pathname.startsWith('/my-cases/'))) return true;
   if (href === '/worklist' && pathname === '/worklist') return true;
+  if (href === '/templates' && (pathname === '/templates' || pathname.startsWith('/templates/'))) return true;
   if (href === '/hmis' && (pathname === '/hmis' || pathname.startsWith('/hmis/'))) return true;
   if (href === '/pacs' && (pathname === '/pacs' || pathname.startsWith('/pacs/'))) return true;
   if ((href.startsWith('/workspace') || href.startsWith('/workstation')) && (pathname.startsWith('/workspace') || pathname.startsWith('/workstation'))) return true;

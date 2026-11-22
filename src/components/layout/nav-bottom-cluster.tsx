@@ -5,6 +5,7 @@ import { useTheme } from '@/components/theme-provider';
 import { Sun, Moon, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HmisLogoutButton } from '@/components/hmis/hmis-logout-button';
+import { useActivePlugins } from '@/hooks/use-active-plugins';
 
 interface NavBottomClusterProps {
   collapsed: boolean;
@@ -21,6 +22,8 @@ export function NavBottomCluster({
   isAtlas,
 }: NavBottomClusterProps) {
   const { theme, setTheme } = useTheme();
+  const { isPluginActive } = useActivePlugins();
+  const hasHmisPlugin = isPluginActive('hmis-gateway');
 
   const isStudentOrAtlas = Boolean(
     isAtlas ||
@@ -35,8 +38,8 @@ export function NavBottomCluster({
   if (collapsed) {
     return (
       <div className="p-2 border-t border-outline-variant/60 flex flex-col items-center gap-2">
-        {/* HMIS Quick Logout Icon Button (Clinical Only) */}
-        {!isStudentOrAtlas && <HmisLogoutButton variant="icon" />}
+        {/* HMIS Quick Logout Icon Button (Clinical Only when HMIS Gateway plugin is active) */}
+        {!isStudentOrAtlas && hasHmisPlugin && <HmisLogoutButton variant="icon" />}
 
         {/* Theme Toggle Button */}
         <div className="relative group">
@@ -70,8 +73,8 @@ export function NavBottomCluster({
 
   return (
     <div className="p-3 border-t border-outline-variant/60 space-y-2.5 bg-surface-container-lowest/50">
-      {/* HMIS Quick Session Release Button (Clinical Only) */}
-      {!isStudentOrAtlas && <HmisLogoutButton variant="sidebar" />}
+      {/* HMIS Quick Session Release Button (Clinical Only when HMIS Gateway plugin is active) */}
+      {!isStudentOrAtlas && hasHmisPlugin && <HmisLogoutButton variant="sidebar" />}
 
       <div className="flex items-center justify-between gap-2">
         {/* User Info */}

@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { ZenDicomViewer } from './zen-dicom-viewer';
-import { CopilotDdxTab } from './copilot-ddx-tab';
+import { ZenInsightsDdxTab } from './zen-insights-ddx-tab';
 import { CopilotChatTab } from './copilot-chat-tab';
-import { CopilotGuidanceTab } from './copilot-guidance-tab';
+import { ZenRadiopaediaPane } from './zen-radiopaedia-pane';
+import { ZenPositiveFindingsRail } from './zen-positive-findings-rail';
 import { ZenReportCanvas } from './zen-report-canvas';
 import { ZenAtlasCompanionPane } from './zen-atlas-companion-pane';
 import { CompanionTab } from '@/services/companion-tab.service';
@@ -17,7 +18,7 @@ export interface ZenCompanionBodyProps {
   activeTab: CompanionTab;
   accessionNumber: string;
   patientName?: string;
-  patientAge?: string;
+  patientAge?: string | number;
   patientGender?: string;
   patientMrn?: string;
   studyDescription?: string;
@@ -31,7 +32,8 @@ export interface ZenCompanionBodyProps {
   report?: ReportEditorState;
   setReport?: React.Dispatch<React.SetStateAction<ReportEditorState>>;
   studyId?: string;
-  onSaveReport?: () => void;
+  reportId?: string;
+  onSaveReport?: (newStatus?: string, milestoneTag?: string) => Promise<any> | void;
   syncStatus?: ReportSyncStatus;
   savedTime?: string | null;
   ddxResult?: DifferentialDiagnosisResult | null;
@@ -41,6 +43,9 @@ export interface ZenCompanionBodyProps {
   findings: string;
   impression: string;
   clinicalHistory?: string;
+  patientClinicalNotes?: string;
+  initialContentJson?: any;
+  onUpdateContentJson?: (json: any) => void;
   isDragging?: boolean;
   isResizing?: boolean;
   onSendToHmis?: (options?: { deepVerify?: boolean }) => void;
@@ -78,6 +83,7 @@ export function ZenCompanionBody({
   report,
   setReport,
   studyId = '',
+  reportId,
   onSaveReport,
   syncStatus,
   savedTime,
@@ -88,6 +94,9 @@ export function ZenCompanionBody({
   findings,
   impression,
   clinicalHistory,
+  patientClinicalNotes,
+  initialContentJson,
+  onUpdateContentJson,
   isDragging,
   isResizing,
   onSendToHmis,
@@ -108,32 +117,100 @@ export function ZenCompanionBody({
 }: ZenCompanionBodyProps) {
   const [isDragOverSeries, setIsDragOverSeries] = useState(false);
 
-  const handleSeriesDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    setIsDragOverSeries(true);
-  };
-
-  const handleSeriesDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOverSeries(false);
-  };
-
   const handleSeriesDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOverSeries(false);
     const raw = e.dataTransfer.getData('application/rad-series-index') || e.dataTransfer.getData('text/plain');
     if (raw) {
       const idx = parseInt(raw, 10);
-      if (!isNaN(idx) && onSelectSeries) {
-        onSelectSeries(idx);
-      }
+      if (!isNaN(idx) && onSelectSeries) onSelectSeries(idx);
     }
   };
 
   return (
     <div className="flex-1 relative overflow-hidden bg-background flex flex-col min-h-0 select-text">
-      {/* Tab 1: Clinical Report Canvas */}
+      {/* 1. Images: PACS DICOM Viewer */}
+      {activeTab === 'images' && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOverSeries(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setIsDragOverSeries(false); }}
+          onDrop={handleSeriesDrop}
+          className={cn('flex-1 relative bg-black overflow-hidden flex flex-col', isDragOverSeries && 'ring-4 ring-primary ring-inset')}
+        >
+          <ZenDicomViewer
+            accessionNumber={accessionNumber}
+            modality={modality}
+            isLocalCase={isLocalCase}
+            localCaseId={localCaseId}
+            localSeries={localSeries}
+            activeSeriesIndex={activeSeriesIndex}
+          />
+          {isDragOverSeries && (
+            <div className="absolute inset-0 z-40 bg-primary/20 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+              <span className="p-3 rounded-2xl bg-surface-container border border-primary/60 text-primary shadow-2xl flex items-center gap-2 text-xs font-mono font-bold animate-bounce">
+                <Layers className="w-5 h-5" />
+                <span>Drop Series to Inspect</span>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. Insights & DDx: Merged Differentials + Insights + Pearls */}
+      {activeTab === 'insights_ddx' && (
+        <ZenInsightsDdxTab
+          findings={findings}
+          impression={impression}
+          clinicalHistory={clinicalHistory}
+          modality={modality}
+          studyDescription={studyDescription}
+          patientAge={patientAge}
+          patientGender={patientGender}
+          studyId={studyId}
+          reportId={reportId}
+          accessionNumber={accessionNumber}
+          initialContentJson={initialContentJson}
+          patientClinicalNotes={patientClinicalNotes}
+          onInsertImpression={onInsertImpression}
+          onUpdateContentJson={onUpdateContentJson}
+          ddxResult={ddxResult}
+          isLoadingDdx={isLoadingDdx}
+          onRefreshDdx={onRefreshDdx}
+        />
+      )}
+
+      {/* 3. AI Copilot Chat */}
+      {activeTab === 'chat' && (
+        <CopilotChatTab
+          findings={findings}
+          impression={impression}
+          modality={modality}
+          clinicalHistory={clinicalHistory}
+          onInsertImpression={onInsertImpression}
+          onApplyReportChanges={setReport ? (c) => setReport((prev) => ({ ...prev, ...c })) : undefined}
+        />
+      )}
+
+      {/* 4. Radiopaedia Reference Articles */}
+      {activeTab === 'radiopaedia' && <ZenRadiopaediaPane isResizing={isResizing} />}
+
+      {/* 5. Positive Findings Checklist */}
+      {activeTab === 'findings' && (
+        <ZenPositiveFindingsRail
+          report={report}
+          setReport={setReport}
+          studyId={studyId}
+          reportId={reportId}
+          accessionNumber={accessionNumber}
+          modality={modality}
+          pgrName={pgrName}
+          onSave={onSaveReport}
+          currentVersion={currentVersion}
+          initialFindings={findings}
+        />
+      )}
+
+      {/* 6. Clinical Report Canvas */}
       {activeTab === 'report' && report && setReport && (
         <div className="flex-1 h-full min-h-0 overflow-hidden flex flex-col">
           <ZenReportCanvas
@@ -142,7 +219,7 @@ export function ZenCompanionBody({
             studyId={studyId}
             modality={modality}
             patientName={patientName}
-            patientAge={patientAge}
+            patientAge={String(patientAge || '')}
             patientGender={patientGender}
             patientMrn={patientMrn}
             studyDescription={studyDescription}
@@ -171,83 +248,11 @@ export function ZenCompanionBody({
         </div>
       )}
 
-      {/* Tab 2: Interactive DICOM Viewer with Drag-and-Drop Series Zone */}
-      {activeTab === 'images' && (
-        <div
-          onDragOver={handleSeriesDragOver}
-          onDragLeave={handleSeriesDragLeave}
-          onDrop={handleSeriesDrop}
-          className={cn(
-            'flex-1 relative bg-black overflow-hidden flex flex-col transition-all',
-            isDragOverSeries && 'ring-4 ring-primary ring-inset'
-          )}
-        >
-          <ZenDicomViewer
-            accessionNumber={accessionNumber}
-            modality={modality}
-            isLocalCase={isLocalCase}
-            localCaseId={localCaseId}
-            localSeries={localSeries}
-            activeSeriesIndex={activeSeriesIndex}
-          />
-
-          {/* Visual Drop Target Highlight when dragging series thumbnail */}
-          {isDragOverSeries && (
-            <div className="absolute inset-0 z-40 bg-primary/20 backdrop-blur-xs flex flex-col items-center justify-center pointer-events-none gap-2">
-              <span className="p-3 rounded-2xl bg-surface-container border border-primary/60 text-primary shadow-2xl flex items-center gap-2 text-xs font-mono font-bold animate-bounce">
-                <Layers className="w-5 h-5" />
-                <span>Drop Series to Inspect in Viewport</span>
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 3: Differential Diagnosis */}
-      {activeTab === 'ddx' && (
-        <CopilotDdxTab
-          ddxResult={ddxResult || null}
-          isLoading={isLoadingDdx}
-          onRefresh={onRefreshDdx || (() => {})}
-          onInsertImpression={onInsertImpression}
-          findings={findings}
-        />
-      )}
-
-      {/* Tab 4: Interactive Copilot Chat */}
-      {activeTab === 'chat' && (
-        <CopilotChatTab
-          findings={findings}
-          impression={impression}
-          modality={modality}
-          clinicalHistory={clinicalHistory}
-          onInsertImpression={onInsertImpression}
-          onApplyReportChanges={
-            setReport
-              ? (changes) => setReport((prev) => ({ ...prev, ...changes }))
-              : undefined
-          }
-        />
-      )}
-
-      {/* Tab 5: Academic Reference Pearls */}
-      {activeTab === 'guidance' && (
-        <CopilotGuidanceTab
-          pearls={ddxResult?.knowledgePearls}
-          onInsertImpression={onInsertImpression}
-          modality={modality}
-        />
-      )}
-
-      {/* Tab 6: IMAIOS eAnatomy Cross-Sectional Atlas */}
+      {/* 7. IMAIOS eAnatomy Atlas */}
       {activeTab === 'atlas' && (
-        <ZenAtlasCompanionPane
-          modality={modality}
-          studyDescription={studyDescription}
-        />
+        <ZenAtlasCompanionPane modality={modality} studyDescription={studyDescription} />
       )}
 
-      {/* Transparent overlay during drag/resize to prevent child event interception */}
       {(isDragging || isResizing) && <div className="absolute inset-0 z-50 bg-transparent" />}
     </div>
   );

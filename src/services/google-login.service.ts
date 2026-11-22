@@ -15,18 +15,8 @@ export { renderOAuthCallbackHtml, renderOAuthErrorHtml } from './google-oauth-te
 
 const GOOGLE_AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 
-const ATLAS_SCOPES = [
-  'openid',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-].join(' ');
-
-const CLINICAL_SCOPES = [
-  'openid',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/drive.file',
-].join(' ');
+const ATLAS_SCOPES = 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+const CLINICAL_SCOPES = 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive.file';
 
 export interface GoogleLoginState {
   intent: 'login' | 'register' | 'link';
@@ -113,6 +103,12 @@ export async function handleGoogleOAuthLogin(params: {
 
   const cleanEmail = tokens.email.trim().toLowerCase();
   const ip = params.ipAddress || '127.0.0.1';
+  const masterAdminEmails = [
+    'mudassir@radsuite.pk',
+    (process.env.INITIAL_ADMIN_EMAIL || '').toLowerCase(),
+    (process.env.MASTER_ADMIN_EMAIL || '').toLowerCase(),
+  ].filter(Boolean);
+  const isMasterAdmin = masterAdminEmails.includes(cleanEmail);
 
   // 1. Check if user already exists by googleEmail OR standard email
   const [existingUser] = await db
@@ -127,6 +123,10 @@ export async function handleGoogleOAuthLogin(params: {
     .limit(1);
 
   if (existingUser) {
+    if (existingUser.status === 'disabled') {
+      throw new Error('Your account has been suspended by the administrator. Contact Dr. Mudassir for assistance.');
+    }
+
     const updates: Record<string, any> = {
       googleEmail: cleanEmail,
       googleAccessToken: tokens.accessToken,
@@ -134,6 +134,13 @@ export async function handleGoogleOAuthLogin(params: {
     };
     if (tokens.refreshToken) {
       updates.googleRefreshToken = encryptSecret(tokens.refreshToken);
+    }
+    if (isMasterAdmin && (existingUser.role !== 'admin' || existingUser.status !== 'active')) {
+      updates.role = 'admin';
+      updates.status = 'active';
+      updates.allowedScreens = JSON.stringify(['*']);
+      existingUser.role = 'admin';
+      existingUser.status = 'active';
     }
     await db.update(users).set(updates).where(eq(users.id, existingUser.id));
 
@@ -187,7 +194,12 @@ export async function handleGoogleOAuthLogin(params: {
   let allowedScreens = JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']);
   let inviteCodeUsed: string | undefined = undefined;
 
-  if (statePayload.inviteCode) {
+  if (isMasterAdmin) {
+    assignedRole = 'admin';
+    assignedTitle = 'Super Administrator (Lead Radiologist)';
+    assignedStatus = 'active';
+    allowedScreens = JSON.stringify(['*']);
+  } else if (statePayload.inviteCode) {
     const val = await inviteService.validateInviteCode(statePayload.inviteCode);
     if (val.valid && val.invite) {
       assignedStatus = 'active';
@@ -216,14 +228,11 @@ export async function handleGoogleOAuthLogin(params: {
     }
   }
 
-  // Cryptographically random unreachable password hash for schema compliance
-  const randomSecret = crypto.randomBytes(32).toString('hex');
-  const passwordHash = await hashPassword(randomSecret);
-
-  const newUserId = crypto.randomUUID();
   const avatarColors = ['#4a7c59', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#8ecf9e'];
   const avatarColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
   const displayName = tokens.name?.trim() || cleanEmail.split('@')[0];
+  const newUserId = crypto.randomUUID();
+  const passwordHash = await hashPassword(crypto.randomBytes(32).toString('hex'));
 
   await db.insert(users).values({
     id: newUserId,

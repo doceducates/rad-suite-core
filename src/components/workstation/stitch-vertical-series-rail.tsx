@@ -35,7 +35,7 @@ export function StitchVerticalSeriesRail({
   return (
     <div
       className={cn(
-        'h-full flex flex-col bg-surface-container/95 border-r border-outline-variant/40 select-none shrink-0 transition-all duration-200 z-30',
+        'h-full hidden md:flex flex-col bg-surface-container/95 border-r border-outline-variant/40 select-none shrink-0 transition-all duration-200 z-30',
         isCollapsed ? 'w-12' : 'w-40 sm:w-44'
       )}
     >
