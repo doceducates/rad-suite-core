@@ -92,7 +92,7 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   const {
     handleSliceChange, handleSelectScoutSlice, clearDirectSlice, getExternalSlice, jumpPanesToSlices,
   } = useOrientationSync({
-    totalPanes, activeCellIndex, syncScroll, getAssignedSeries, getPaneOrientation, onFocusPane: setActiveCellIndex,
+    totalPanes, activeCellIndex, syncScroll, unlinkedPanes, getAssignedSeries, getPaneOrientation, onFocusPane: setActiveCellIndex,
   });
 
   const {

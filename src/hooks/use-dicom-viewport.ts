@@ -111,6 +111,25 @@ export function useDicomViewport({
     }
   }, [maxSlices]);
 
+  // Global slice stepping event listener (triggered by header buttons << < > >>)
+  useEffect(() => {
+    const handleSliceStep = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail) return;
+      if (detail.action === 'prev') {
+        changeSliceByUser((s) => s - 1);
+      } else if (detail.action === 'next') {
+        changeSliceByUser((s) => s + 1);
+      } else if (detail.action === 'first') {
+        changeSliceByUser(0);
+      } else if (detail.action === 'last') {
+        changeSliceByUser(maxSlices - 1);
+      }
+    };
+    window.addEventListener('zen:dicom:step-slice', handleSliceStep);
+    return () => window.removeEventListener('zen:dicom:step-slice', handleSliceStep);
+  }, [changeSliceByUser, maxSlices]);
+
   const resetViewport = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });

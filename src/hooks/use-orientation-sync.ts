@@ -6,6 +6,7 @@ interface UseOrientationSyncOptions {
   totalPanes: number;
   activeCellIndex: number;
   syncScroll?: boolean;
+  unlinkedPanes?: Set<number>;
   getAssignedSeries: (paneIdx: number) => any[];
   getPaneOrientation: (paneIdx: number) => 'AXIAL' | 'SAGITTAL' | 'CORONAL';
   onFocusPane: (paneIdx: number) => void;
@@ -15,6 +16,7 @@ export function useOrientationSync({
   totalPanes,
   activeCellIndex,
   syncScroll = true,
+  unlinkedPanes,
   getAssignedSeries,
   getPaneOrientation,
   onFocusPane,
@@ -33,7 +35,7 @@ export function useOrientationSync({
     (paneIdx: number, sl: number, total: number) => {
       lastScrolledPaneRef.current = paneIdx;
       setPaneDirectSlice((prev) => (Object.keys(prev).length > 0 ? {} : prev));
-      if (total > 1) {
+      if (total > 1 && !unlinkedPanes?.has(paneIdx)) {
         const orient = getPaneOrientation(paneIdx);
         const newProgress = sl / (total - 1);
         setOrientationProgress((prev) => (prev[orient] === newProgress ? prev : { ...prev, [orient]: newProgress }));
@@ -42,7 +44,7 @@ export function useOrientationSync({
         onFocusPane(paneIdx);
       }
     },
-    [activeCellIndex, getPaneOrientation, onFocusPane]
+    [activeCellIndex, getPaneOrientation, onFocusPane, unlinkedPanes]
   );
 
   const handleSelectScoutSlice = useCallback(
@@ -101,6 +103,10 @@ export function useOrientationSync({
       if (paneDirectSlice[idx] !== undefined) {
         return paneDirectSlice[idx];
       }
+      // Unlinked panes are isolated from synchronized slice progress
+      if (unlinkedPanes?.has(idx)) {
+        return undefined;
+      }
       const paneOrient = getPaneOrientation(idx);
       if (syncScroll && paneOrient === activeOrientation) {
         const progress = orientationProgress[paneOrient] ?? 0;
@@ -108,7 +114,7 @@ export function useOrientationSync({
       }
       return undefined;
     },
-    [paneDirectSlice, syncScroll, activeCellIndex, activeOrientation, getPaneOrientation, orientationProgress]
+    [paneDirectSlice, syncScroll, activeCellIndex, activeOrientation, getPaneOrientation, orientationProgress, unlinkedPanes]
   );
 
   return {

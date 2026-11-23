@@ -23,6 +23,61 @@ export interface GridLinkingSyncState {
 }
 
 /**
+ * Pure function: calculates updated zoom map across linked panes.
+ * Unlinked panes are completely isolated.
+ */
+export function propagateZoom(
+  sourceIdx: number,
+  newZoom: number,
+  totalPanes: number,
+  unlinkedPanes: Set<number>,
+  prevZoomMap: Record<number, number>
+): Record<number, number> {
+  const next = { ...prevZoomMap, [sourceIdx]: newZoom };
+  if (!unlinkedPanes.has(sourceIdx)) {
+    for (let i = 0; i < totalPanes; i++) {
+      if (i !== sourceIdx && !unlinkedPanes.has(i)) {
+        next[i] = newZoom;
+      }
+    }
+  }
+  return next;
+}
+
+/**
+ * Pure function: calculates updated pan map across linked co-planar panes.
+ * Unlinked panes are completely isolated.
+ */
+export function propagatePan(
+  sourceIdx: number,
+  newPan: { x: number; y: number },
+  delta: { dx: number; dy: number } | undefined,
+  totalPanes: number,
+  unlinkedPanes: Set<number>,
+  prevPanMap: Record<number, { x: number; y: number }>,
+  getPaneOrientation?: (paneIdx: number) => string
+): Record<number, { x: number; y: number }> {
+  const next = { ...prevPanMap, [sourceIdx]: newPan };
+  if (!unlinkedPanes.has(sourceIdx)) {
+    const srcOrient = getPaneOrientation?.(sourceIdx);
+    for (let i = 0; i < totalPanes; i++) {
+      if (i !== sourceIdx && !unlinkedPanes.has(i)) {
+        if (delta) {
+          const current = prevPanMap[i] || { x: 0, y: 0 };
+          next[i] = { x: current.x + delta.dx, y: current.y + delta.dy };
+        } else {
+          const tgtOrient = getPaneOrientation?.(i);
+          if (!srcOrient || !tgtOrient || srcOrient === tgtOrient) {
+            next[i] = newPan;
+          }
+        }
+      }
+    }
+  }
+  return next;
+}
+
+/**
  * useGridLinkingSync
  * Manages synchronized zoom and pan across linked panes in multi-view layouts.
  * - Zoom: Synchronizes scale across all linked panes so structures display at identical magnification.
@@ -43,20 +98,7 @@ export function useGridLinkingSync({
     (sourceIdx: number, newZoom: number) => {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-
-      setZoomMap((prev) => {
-        const next = { ...prev, [sourceIdx]: newZoom };
-        // If source pane is linked, propagate zoom to all other linked panes
-        if (!unlinkedPanes.has(sourceIdx)) {
-          for (let i = 0; i < totalPanes; i++) {
-            if (i !== sourceIdx && !unlinkedPanes.has(i)) {
-              next[i] = newZoom;
-            }
-          }
-        }
-        return next;
-      });
-
+      setZoomMap((prev) => propagateZoom(sourceIdx, newZoom, totalPanes, unlinkedPanes, prev));
       isSyncingRef.current = false;
     },
     [totalPanes, unlinkedPanes]
@@ -70,62 +112,26 @@ export function useGridLinkingSync({
     ) => {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-
-      setPanMap((prev) => {
-        const next = { ...prev, [sourceIdx]: newPan };
-        // If source pane is linked, propagate pan to other linked panes
-        if (!unlinkedPanes.has(sourceIdx)) {
-          const srcOrient = getPaneOrientation?.(sourceIdx);
-          for (let i = 0; i < totalPanes; i++) {
-            if (i !== sourceIdx && !unlinkedPanes.has(i)) {
-              if (delta) {
-                // Apply delta to keep relative positioning
-                const current = prev[i] || { x: 0, y: 0 };
-                next[i] = { x: current.x + delta.dx, y: current.y + delta.dy };
-              } else {
-                // If co-planar or orientation-free, match pan
-                const tgtOrient = getPaneOrientation?.(i);
-                if (!srcOrient || !tgtOrient || srcOrient === tgtOrient) {
-                  next[i] = newPan;
-                }
-              }
-            }
-          }
-        }
-        return next;
-      });
-
+      setPanMap((prev) =>
+        propagatePan(sourceIdx, newPan, delta, totalPanes, unlinkedPanes, prev, getPaneOrientation)
+      );
       isSyncingRef.current = false;
     },
     [totalPanes, unlinkedPanes, getPaneOrientation]
   );
 
-  const resetPaneTransform = useCallback(
-    (paneIdx?: number) => {
-      if (paneIdx !== undefined) {
-        setZoomMap((prev) => ({ ...prev, [paneIdx]: 1 }));
-        setPanMap((prev) => ({ ...prev, [paneIdx]: { x: 0, y: 0 } }));
-      } else {
-        setZoomMap({});
-        setPanMap({});
-      }
-    },
-    []
-  );
+  const resetPaneTransform = useCallback((paneIdx?: number) => {
+    if (paneIdx !== undefined) {
+      setZoomMap((prev) => ({ ...prev, [paneIdx]: 1 }));
+      setPanMap((prev) => ({ ...prev, [paneIdx]: { x: 0, y: 0 } }));
+    } else {
+      setZoomMap({});
+      setPanMap({});
+    }
+  }, []);
 
-  const getPaneZoom = useCallback(
-    (paneIdx: number) => {
-      return zoomMap[paneIdx];
-    },
-    [zoomMap]
-  );
-
-  const getPanePan = useCallback(
-    (paneIdx: number) => {
-      return panMap[paneIdx];
-    },
-    [panMap]
-  );
+  const getPaneZoom = useCallback((paneIdx: number) => zoomMap[paneIdx], [zoomMap]);
+  const getPanePan = useCallback((paneIdx: number) => panMap[paneIdx], [panMap]);
 
   return {
     zoomMap,

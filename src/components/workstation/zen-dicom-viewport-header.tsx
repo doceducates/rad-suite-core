@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Layers, Grid, ChevronDown, ArrowLeftRight, MoreHorizontal } from 'lucide-react';
+import {
+  Layers,
+  Grid,
+  ChevronDown,
+  ArrowLeftRight,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
 import type { DicomTool } from '@/components/dicom/dicom-toolbar';
 import type { ViewportLayoutMode } from '@/types/viewport';
 import { ZenDicomLayoutPopover } from './zen-dicom-layout-popover';
@@ -153,8 +163,48 @@ export function ZenDicomViewportHeader({
         onToggleCine={onToggleCine}
       />
 
-      {/* Right Cluster: Overflow Menu + Swap to Report */}
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Right Cluster: Stepping Navigation + Overflow Menu + Swap to Report */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Quick Slice Stepping Navigation (Vitrea MMV << < > >>) */}
+        <div className="hidden sm:flex items-center gap-0.5 bg-surface-container-high/60 border border-outline-variant/50 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('zen:dicom:step-slice', { detail: { action: 'first' } }))}
+            className="h-6 w-6 rounded hover:bg-surface-container-highest text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+            title="First Slice (Home / <<)"
+            aria-label="First Slice"
+          >
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('zen:dicom:step-slice', { detail: { action: 'prev' } }))}
+            className="h-6 w-6 rounded hover:bg-surface-container-highest text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+            title="Previous Slice (PageUp / <)"
+            aria-label="Previous Slice"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('zen:dicom:step-slice', { detail: { action: 'next' } }))}
+            className="h-6 w-6 rounded hover:bg-surface-container-highest text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+            title="Next Slice (PageDown / >)"
+            aria-label="Next Slice"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('zen:dicom:step-slice', { detail: { action: 'last' } }))}
+            className="h-6 w-6 rounded hover:bg-surface-container-highest text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+            title="Last Slice (End / >>)"
+            aria-label="Last Slice"
+          >
+            <ChevronsRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         <div className="relative">
           <button
             type="button"
