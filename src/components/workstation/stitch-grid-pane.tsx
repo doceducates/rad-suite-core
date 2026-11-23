@@ -23,10 +23,18 @@ interface StitchGridPaneProps {
   preset?: string;
   invert?: boolean;
   resetKey?: number;
+  externalZoom?: number;
+  onZoomChange?: (paneIdx: number, zoom: number) => void;
+  externalPan?: { x: number; y: number };
+  onPanChange?: (paneIdx: number, pan: { x: number; y: number }, delta?: { dx: number; dy: number }) => void;
   isLinked?: boolean;
+  isPendingSwap?: boolean;
+  isSubtractionActive?: boolean;
+  onToggleSubtraction?: (paneIdx: number) => void;
   onToggleLink?: (paneIdx: number) => void;
   onSnapshot?: (paneIdx: number) => void;
   onClosePane?: (paneIdx: number) => void;
+  onRearrangeClick?: (paneIdx: number) => void;
   onClick: (idx: number) => void;
   onDoubleClick: (idx: number) => void;
   onDragOver: (idx: number, e: React.DragEvent) => void;
@@ -58,10 +66,18 @@ export function StitchGridPane({
   preset = 'soft',
   invert = false,
   resetKey,
+  externalZoom,
+  onZoomChange,
+  externalPan,
+  onPanChange,
   isLinked = true,
+  isPendingSwap = false,
+  isSubtractionActive = false,
+  onToggleSubtraction,
   onToggleLink,
   onSnapshot,
   onClosePane,
+  onRearrangeClick,
   onClick,
   onDoubleClick,
   onDragOver,
@@ -142,6 +158,10 @@ export function StitchGridPane({
           invert={invert}
           resetKey={resetKey}
           externalSlice={externalSlice}
+          externalZoom={externalZoom}
+          onZoomChange={(z) => onZoomChange?.(idx, z)}
+          externalPan={externalPan}
+          onPanChange={(p, delta) => onPanChange?.(idx, p, delta)}
           scoutLines={paneScoutLines}
           active3DPoint={active3DPoint}
           onPoint3DSelect={onPoint3DSelect}
@@ -158,7 +178,7 @@ export function StitchGridPane({
         </div>
       )}
 
-      {/* Vitrea MMV Pane Header Mini-Toolbar (Link/Unlink, Snapshot, Maximize, Close) */}
+      {/* Vitrea MMV Pane Header Mini-Toolbar (Link/Unlink, Snapshot, Maximize, Close, Rearrange) */}
       <StitchGridOverlay
         paneIdx={idx}
         paneLabel={`P${idx + 1}`}
@@ -166,10 +186,14 @@ export function StitchGridPane({
         isDragOver={isDragOver}
         totalPanes={totalPanes}
         isLinked={isLinked}
+        isPendingSwap={isPendingSwap}
+        isSubtractionActive={isSubtractionActive}
+        onToggleSubtraction={onToggleSubtraction}
         onToggleLink={onToggleLink}
         onSnapshot={onSnapshot}
         onClose={onClosePane}
         onMaximize={onDoubleClick}
+        onRearrangeClick={onRearrangeClick}
       />
     </div>
   );

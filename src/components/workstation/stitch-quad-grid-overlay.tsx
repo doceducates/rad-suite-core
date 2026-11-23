@@ -1,7 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Link2, Unlink, Camera, X, Maximize2, Download } from 'lucide-react';
+import { X, Maximize2, Download } from 'lucide-react';
+import {
+  VitreaSubtractionIcon,
+  VitreaRearrangeIcon,
+  VitreaLinkedIcon,
+  VitreaUnlinkedIcon,
+  VitreaSnapshotIcon,
+} from './zen-dicom-tool-icons';
 import { cn } from '@/lib/utils';
 
 export interface StitchGridOverlayProps {
@@ -11,10 +18,14 @@ export interface StitchGridOverlayProps {
   isDragOver: boolean;
   totalPanes: number;
   isLinked?: boolean;
+  isPendingSwap?: boolean;
+  isSubtractionActive?: boolean;
+  onToggleSubtraction?: (paneIdx: number) => void;
   onToggleLink?: (paneIdx: number) => void;
   onSnapshot?: (paneIdx: number) => void;
   onClose?: (paneIdx: number) => void;
   onMaximize?: (paneIdx: number) => void;
+  onRearrangeClick?: (paneIdx: number) => void;
 }
 
 export function StitchGridOverlay({
@@ -22,10 +33,14 @@ export function StitchGridOverlay({
   paneLabel,
   isDragOver,
   isLinked = true,
+  isPendingSwap = false,
+  isSubtractionActive = false,
+  onToggleSubtraction,
   onToggleLink,
   onSnapshot,
   onClose,
   onMaximize,
+  onRearrangeClick,
 }: StitchGridOverlayProps) {
   const stopP = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -36,6 +51,61 @@ export function StitchGridOverlay({
         onClick={stopP}
         className="absolute top-1.5 right-1.5 z-30 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-container-high/80 backdrop-blur-md border border-outline-variant/60 shadow-md select-none transition-opacity duration-150"
       >
+        {/* 1. Digital Subtraction Toggle */}
+        {onToggleSubtraction && (
+          <button
+            type="button"
+            onClick={(e) => {
+              stopP(e);
+              onToggleSubtraction(paneIdx);
+            }}
+            className={cn(
+              'h-5 w-5 rounded-md flex items-center justify-center transition-colors cursor-pointer border text-xs',
+              isSubtractionActive
+                ? 'bg-red-500/30 border-red-500 text-red-300 font-bold'
+                : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-container-highest'
+            )}
+            title={
+              isSubtractionActive
+                ? 'Subtraction Active (Click to Disable DSA)'
+                : 'Digital Subtraction (Compare / Difference against Mask)'
+            }
+            aria-label="Digital Subtraction"
+          >
+            <VitreaSubtractionIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* 2. Re-arrange Images / Swap Panes (Draggable & Clickable) */}
+        <button
+          type="button"
+          draggable={true}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.dataTransfer.setData('application/rad-pane-swap', String(paneIdx));
+            e.dataTransfer.setData('text/plain', `swap:${paneIdx}`);
+            e.dataTransfer.effectAllowed = 'move';
+          }}
+          onClick={(e) => {
+            stopP(e);
+            onRearrangeClick?.(paneIdx);
+          }}
+          className={cn(
+            'h-5 w-5 rounded-md flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing border text-xs',
+            isPendingSwap
+              ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse font-bold'
+              : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-container-highest'
+          )}
+          title={
+            isPendingSwap
+              ? 'Swap active: Click another pane to swap (or click here to cancel)'
+              : 'Re-arrange Images (Drag or Click to Swap with Another Pane)'
+          }
+          aria-label="Re-arrange Viewport"
+        >
+          <VitreaRearrangeIcon className="w-3.5 h-3.5" />
+        </button>
+
         {/* Link / Unlink Sync Toggle */}
         {onToggleLink && (
           <button
@@ -50,10 +120,18 @@ export function StitchGridOverlay({
                 ? 'bg-primary/25 border-primary/60 text-primary shadow-2xs font-bold'
                 : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-container-highest'
             )}
-            title={isLinked ? 'Unlink Viewport (Currently Synced in Lockstep)' : 'Link Viewport (Currently Independent)'}
+            title={
+              isLinked
+                ? 'Unlink Viewport (Currently Synced in Lockstep)'
+                : 'Link Viewport (Currently Independent)'
+            }
             aria-label={isLinked ? 'Unlink Viewport' : 'Link Viewport'}
           >
-            {isLinked ? <Link2 className="w-3 h-3" /> : <Unlink className="w-3 h-3 text-amber-400" />}
+            {isLinked ? (
+              <VitreaLinkedIcon className="w-3.5 h-3.5" />
+            ) : (
+              <VitreaUnlinkedIcon className="w-3.5 h-3.5 text-amber-400" />
+            )}
           </button>
         )}
 
@@ -69,7 +147,7 @@ export function StitchGridOverlay({
             title="Capture Snapshot of this Pane"
             aria-label="Capture Snapshot"
           >
-            <Camera className="w-3 h-3" />
+            <VitreaSnapshotIcon className="w-3.5 h-3.5" />
           </button>
         )}
 

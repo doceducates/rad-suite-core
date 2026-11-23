@@ -39,6 +39,8 @@ interface ZenDicomViewerProps {
   seriesList?: any[]; isRailCollapsed?: boolean; hideCanvasPreset?: boolean; tool?: DicomTool; preset?: string;
   colormapId?: string; isCinePlaying?: boolean; onToggleCine?: () => void; invert?: boolean;
   externalSlice?: number; resetKey?: number; onSliceChange?: (sl: number) => void;
+  externalZoom?: number; onZoomChange?: (z: number) => void;
+  externalPan?: { x: number; y: number }; onPanChange?: (p: { x: number; y: number }, delta?: { dx: number; dy: number }) => void;
   scoutLines?: ProjectedScoutLine[]; onSelectScoutSlice?: (seriesNumber: string | number, sliceIndex: number) => void;
   onGeometryUpdate?: (geom: SliceGeometry) => void; source?: 'local' | 's3' | 'pacs' | 'edge';
   active3DPoint?: [number, number, number] | null; onPoint3DSelect?: (pt: [number, number, number]) => void;
@@ -51,6 +53,7 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
     accessionNumber, modality = 'CT', isLocalCase = false, localCaseId, localSeries = [],
     activeSeriesIndex = 0, onSelectSeries, seriesList = [], tool = 'wl', preset = 'soft',
     colormapId = 'grayscale', isCinePlaying = false, onToggleCine, invert = false, externalSlice,
+    externalZoom, onZoomChange, externalPan, onPanChange,
     resetKey, onSliceChange, scoutLines = [], onSelectScoutSlice, onGeometryUpdate, source,
     active3DPoint, onPoint3DSelect, isCrosshairVisible = true, onClear3DPoint, onToggleInvert,
   } = props;
@@ -89,7 +92,10 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
     zoom, setZoom, pan, setPan, slice, setSlice, changeSliceByUser, ww, setWw, wc, setWc, isSpacePressed, resetViewport,
     handleWheel, handlePointerDown: basePointerDown, handlePointerMove: basePointerMove, handlePointerUp: basePointerUp,
     handleTouchStart, handleTouchMove, handleTouchEnd,
-  } = useDicomViewport({ maxSlices, initialWw: 380, initialWc: 40, containerRef, onSliceChange });
+  } = useDicomViewport({
+    maxSlices, initialWw: 380, initialWc: 40, containerRef, onSliceChange,
+    externalZoom, onZoomChange, externalPan, onPanChange,
+  });
 
   const { isHovered, handlePointerEnter, handlePointerLeave, startSmoothScroll, stopSmoothScroll } = usePaneArrowScroll({
     containerRef,

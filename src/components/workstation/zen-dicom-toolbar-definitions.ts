@@ -4,7 +4,6 @@ import {
   ZoomIn,
   Crosshair,
   Ruler,
-  Maximize2,
   Circle,
   PenTool,
   Type,
@@ -15,10 +14,10 @@ import {
   Play,
   Pause,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import type { DicomTool } from '@/components/dicom/dicom-toolbar';
 import type { ViewportLayoutMode } from '@/types/viewport';
+import { AngleToolIcon, CobbAngleToolIcon } from './zen-dicom-tool-icons';
 
 export interface DicomToolDefinition {
   id: DicomTool;
@@ -82,7 +81,7 @@ export const DICOM_TOOLS: DicomToolDefinition[] = [
     shortLabel: 'Angle',
     hotkey: 'V',
     tooltip: '3-Point Angle (V) — Measure anatomical angles',
-    icon: Maximize2,
+    icon: AngleToolIcon,
     category: 'measure',
   },
   {
@@ -91,7 +90,7 @@ export const DICOM_TOOLS: DicomToolDefinition[] = [
     shortLabel: 'Cobb',
     hotkey: 'C',
     tooltip: 'Cobb Angle (C) — Dual-line spinal curvature analysis',
-    icon: Sparkles,
+    icon: CobbAngleToolIcon,
     category: 'measure',
   },
   {
@@ -192,4 +191,3 @@ export function getVisibleToolIds(tier: ResponsiveHeaderTier): DicomTool[] {
       return ['wl', 'pan', 'zoom'];
   }
 }
-

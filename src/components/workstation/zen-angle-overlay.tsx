@@ -45,15 +45,21 @@ export function ZenAngleOverlay({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!isActive || !onDeleteMeasurement) return;
+    if (!isActive) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && points.length > 0) {
+        e.preventDefault();
+        setPoints([]);
+        setHoverPoint(null);
+        return;
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && measurements.length > 0) {
-        onDeleteMeasurement(measurements[measurements.length - 1].id);
+        onDeleteMeasurement?.(measurements[measurements.length - 1].id);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isActive, measurements, onDeleteMeasurement]);
+  }, [isActive, measurements, onDeleteMeasurement, points.length]);
 
   const getLocalCoords = (e: React.PointerEvent<SVGSVGElement>) => {
     const svg = svgRef.current;

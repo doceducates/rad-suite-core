@@ -7,6 +7,7 @@ import { StitchGridPane } from './stitch-grid-pane';
 import { SliceGeometry } from '@/services/dicom-geometry.service';
 import { useOrientationSync } from '@/hooks/use-orientation-sync';
 import { useGrid3DNavigation } from '@/hooks/use-grid-3d-navigation';
+import { useGridLinkingSync } from '@/hooks/use-grid-linking-sync';
 import { Zen3DPointBanner } from './zen-3d-point-banner';
 
 interface StitchQuadGridProps {
@@ -45,6 +46,8 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   const [dragOverPaneIndex, setDragOverPaneIndex] = useState<number | null>(null);
   const [maximizedPaneIndex, setMaximizedPaneIndex] = useState<number | null>(null);
   const [unlinkedPanes, setUnlinkedPanes] = useState<Set<number>>(new Set());
+  const [subtractedPanes, setSubtractedPanes] = useState<Set<number>>(new Set());
+  const [pendingSwapPane, setPendingSwapPane] = useState<number | null>(null);
 
   const r = Math.max(1, Math.min(5, rows || 2));
   const c = Math.max(1, Math.min(5, cols || 2));
@@ -99,22 +102,24 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     onClearMaximized: () => setMaximizedPaneIndex(null),
   });
 
-  const handleToggleLink = useCallback((paneIdx: number) => {
-    setUnlinkedPanes((prev) => {
-      const next = new Set(prev);
-      if (next.has(paneIdx)) next.delete(paneIdx);
-      else next.add(paneIdx);
-      return next;
-    });
+  const { handleZoomChange, handlePanChange, getPaneZoom, getPanePan } = useGridLinkingSync({
+    totalPanes, unlinkedPanes, getPaneOrientation,
+  });
+
+  const handleToggleSubtraction = useCallback((pIdx: number) => {
+    setSubtractedPanes((prev) => { const n = new Set(prev); if (n.has(pIdx)) n.delete(pIdx); else n.add(pIdx); return n; });
+  }, []);
+
+  const handleToggleLink = useCallback((pIdx: number) => {
+    setUnlinkedPanes((prev) => { const n = new Set(prev); if (n.has(pIdx)) n.delete(pIdx); else n.add(pIdx); return n; });
   }, []);
 
   const handleSnapshotPane = useCallback((paneIdx: number) => {
     const canvases = document.querySelectorAll('canvas');
     if (canvases && canvases[paneIdx]) {
       try {
-        const dataUrl = canvases[paneIdx].toDataURL('image/png');
         const a = document.createElement('a');
-        a.href = dataUrl;
+        a.href = canvases[paneIdx].toDataURL('image/png');
         a.download = `Snapshot_P${paneIdx + 1}_${accessionNumber}.png`;
         a.click();
       } catch (err) {
@@ -136,18 +141,60 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     [unlinkedPanes, handleSliceChange]
   );
 
+  const executeSwap = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    const fromSeries = paneSeriesMap[fromIdx] ?? (fromIdx % (availableSeries.length || 1));
+    const toSeries = paneSeriesMap[toIdx] ?? (toIdx % (availableSeries.length || 1));
+    if (onUpdatePaneSeries) {
+      onUpdatePaneSeries(fromIdx, toSeries);
+      onUpdatePaneSeries(toIdx, fromSeries);
+    } else {
+      setLocalPaneSeriesMap((prev) => ({ ...prev, [fromIdx]: toSeries, [toIdx]: fromSeries }));
+    }
+    clearDirectSlice(fromIdx);
+    clearDirectSlice(toIdx);
+    setActiveCellIndex(toIdx);
+    setPendingSwapPane(null);
+  }, [availableSeries.length, clearDirectSlice, onUpdatePaneSeries, paneSeriesMap]);
+
+  const handleRearrangeClick = useCallback((paneIdx: number) => {
+    setPendingSwapPane((prev) => {
+      if (prev === null) return paneIdx;
+      if (prev === paneIdx) return null;
+      executeSwap(prev, paneIdx);
+      return null;
+    });
+  }, [executeSwap]);
+
   const handlePaneClick = useCallback((idx: number) => {
+    if (pendingSwapPane !== null) {
+      if (pendingSwapPane !== idx) executeSwap(pendingSwapPane, idx);
+      else setPendingSwapPane(null);
+      return;
+    }
     setActiveCellIndex(idx);
     clearDirectSlice(idx);
     if (availableSeries.length > 0) {
       const mappedIdx = paneSeriesMap[idx] ?? (idx % availableSeries.length);
       if (mappedIdx >= 0) onActiveSeriesChange?.(mappedIdx);
     }
-  }, [availableSeries.length, paneSeriesMap, onActiveSeriesChange, clearDirectSlice]);
+  }, [pendingSwapPane, executeSwap, availableSeries.length, paneSeriesMap, onActiveSeriesChange, clearDirectSlice]);
 
   const handleDrop = useCallback((idx: number, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverPaneIndex(null);
+
+    // 1. Swap panes via Re-arrange tool
+    const swapFrom = e.dataTransfer.getData('application/rad-pane-swap');
+    if (swapFrom !== '') {
+      const fromIdx = parseInt(swapFrom, 10);
+      if (!isNaN(fromIdx) && fromIdx !== idx) {
+        executeSwap(fromIdx, idx);
+        return;
+      }
+    }
+
+    // 2. Drop series from docked series column
     const raw = e.dataTransfer.getData('application/rad-series-index') || e.dataTransfer.getData('text/plain');
     const sIdx = parseInt(raw, 10);
     if (!isNaN(sIdx) && sIdx >= 0 && sIdx < (availableSeries.length || 100)) {
@@ -157,7 +204,7 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
       setActiveCellIndex(idx);
       onActiveSeriesChange?.(sIdx);
     }
-  }, [availableSeries.length, onActiveSeriesChange, clearDirectSlice, onUpdatePaneSeries]);
+  }, [executeSwap, availableSeries.length, onActiveSeriesChange, clearDirectSlice, onUpdatePaneSeries]);
 
   const handleGeometryUpdate = useCallback((idx: number, geom: SliceGeometry) => {
     setPanesGeometry((prev) => {
@@ -182,11 +229,14 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     const sCount = assignedSeries[0]?.sliceCount || 32;
     const isLinked = !unlinkedPanes.has(idx);
     const extSlice = isLinked ? getExternalSlice(idx, sCount) : undefined;
+    const extZoom = isLinked ? getPaneZoom(idx) : undefined;
+    const extPan = isLinked ? getPanePan(idx) : undefined;
 
     return (
       <StitchGridPane
         key={idx} idx={idx} isActive={idx === activeCellIndex} isDragOver={idx === dragOverPaneIndex}
-        assignedSeries={assignedSeries} externalSlice={extSlice}
+        assignedSeries={assignedSeries} externalSlice={extSlice} externalZoom={extZoom}
+        onZoomChange={handleZoomChange} externalPan={extPan} onPanChange={handlePanChange}
         scoutLinesActive={scoutLinesActive} panesGeometry={panesGeometry} totalPanes={totalPanes}
         accessionNumber={accessionNumber} modality={modality} isLocalCase={isLocalCase} localCaseId={localCaseId}
         tool={tool} preset={preset} invert={invert} resetKey={resetKey} active3DPoint={active3DPoint}
@@ -195,11 +245,10 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
         onDoubleClick={(pIdx) => setMaximizedPaneIndex((prev) => (prev === pIdx ? null : pIdx))}
         onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
         onGeometryUpdate={handleGeometryUpdate} onSliceChange={handlePaneSliceChange}
-        onSelectScoutSlice={handleSelectScoutSlice}
-        isLinked={isLinked}
-        onToggleLink={handleToggleLink}
-        onSnapshot={handleSnapshotPane}
-        onClosePane={handleClosePane}
+        onSelectScoutSlice={handleSelectScoutSlice} isLinked={isLinked} isPendingSwap={pendingSwapPane === idx}
+        isSubtractionActive={subtractedPanes.has(idx)} onToggleSubtraction={handleToggleSubtraction}
+        onToggleLink={handleToggleLink} onSnapshot={handleSnapshotPane} onClosePane={handleClosePane}
+        onRearrangeClick={handleRearrangeClick}
       />
     );
   };

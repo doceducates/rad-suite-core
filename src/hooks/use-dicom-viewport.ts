@@ -12,6 +12,10 @@ interface UseDicomViewportOptions {
   containerRef?: React.RefObject<HTMLElement | null>;
   onSliceChange?: (slice: number) => void;
   touchMode?: MobileTouchMode;
+  externalZoom?: number;
+  onZoomChange?: (zoom: number) => void;
+  externalPan?: { x: number; y: number };
+  onPanChange?: (pan: { x: number; y: number }, delta?: { dx: number; dy: number }) => void;
 }
 
 export function useDicomViewport({
@@ -21,6 +25,10 @@ export function useDicomViewport({
   containerRef,
   onSliceChange,
   touchMode = 'scrub',
+  externalZoom,
+  onZoomChange,
+  externalPan,
+  onPanChange,
 }: UseDicomViewportOptions) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -28,6 +36,27 @@ export function useDicomViewport({
   const [ww, setWw] = useState(initialWw);
   const [wc, setWc] = useState(initialWc);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+
+  const onZoomChangeRef = useRef(onZoomChange);
+  const onPanChangeRef = useRef(onPanChange);
+  useEffect(() => {
+    onZoomChangeRef.current = onZoomChange;
+    onPanChangeRef.current = onPanChange;
+  });
+
+  // Synchronize incoming external zoom from linked viewports
+  useEffect(() => {
+    if (typeof externalZoom === 'number' && externalZoom > 0 && Math.abs(externalZoom - zoom) > 0.005) {
+      setZoom(externalZoom);
+    }
+  }, [externalZoom, zoom]);
+
+  // Synchronize incoming external pan from linked viewports
+  useEffect(() => {
+    if (externalPan && (externalPan.x !== pan.x || externalPan.y !== pan.y)) {
+      setPan(externalPan);
+    }
+  }, [externalPan, pan.x, pan.y]);
 
   const sliceRef = useRef(0);
   sliceRef.current = slice;
@@ -108,11 +137,14 @@ export function useDicomViewport({
           const mouseX = e.clientX - (rect.left + rect.width / 2);
           const mouseY = e.clientY - (rect.top + rect.height / 2);
           const zoomRatio = newZoom / prevZoom;
-          setPan((p) => ({
-            x: Number((mouseX - (mouseX - p.x) * zoomRatio).toFixed(1)),
-            y: Number((mouseY - (mouseY - p.y) * zoomRatio).toFixed(1)),
-          }));
+          const nextPan = {
+            x: Number((mouseX - (mouseX - pan.x) * zoomRatio).toFixed(1)),
+            y: Number((mouseY - (mouseY - pan.y) * zoomRatio).toFixed(1)),
+          };
+          setPan(nextPan);
+          onPanChangeRef.current?.(nextPan);
         }
+        onZoomChangeRef.current?.(newZoom);
         return newZoom;
       });
     } else {
@@ -153,10 +185,18 @@ export function useDicomViewport({
     lastPos.current = { x: e.clientX, y: e.clientY };
 
     if (isSpacePressed || activeTool === 'pan' || e.buttons === 2 || e.buttons === 4) {
-      setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+      setPan((p) => {
+        const nextPan = { x: p.x + dx, y: p.y + dy };
+        onPanChangeRef.current?.(nextPan, { dx, dy });
+        return nextPan;
+      });
     } else if (activeTool === 'zoom') {
       const zoomFactor = Math.exp(-dy * 0.005);
-      setZoom((z) => Math.max(0.2, Math.min(10.0, Number((z * zoomFactor).toFixed(3)))));
+      setZoom((z) => {
+        const nextZoom = Math.max(0.2, Math.min(10.0, Number((z * zoomFactor).toFixed(3))));
+        onZoomChangeRef.current?.(nextZoom);
+        return nextZoom;
+      });
     } else if (activeTool === 'wl') {
       setWw((w) => {
         const sens = Math.max(1, Math.round(w * 0.005));
