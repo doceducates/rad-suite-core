@@ -139,9 +139,9 @@ export function StitchGridPane({
       onDragOver={(e) => onDragOver(idx, e)}
       onDragLeave={(e) => onDragLeave(idx, e)}
       onDrop={(e) => onDrop(idx, e)}
-      className={`relative bg-black rounded-xl overflow-hidden cursor-crosshair transition-all border ${
+      className={`relative bg-black rounded-[3px] overflow-hidden cursor-crosshair transition-all border ${
         isActive
-          ? 'border-2 border-primary ring-2 ring-primary/40 shadow-xs'
+          ? 'border-2 border-primary ring-1 ring-primary/40 shadow-xs'
           : 'border-outline-variant/40 hover:border-outline'
       } ${isDragOver ? 'ring-4 ring-primary border-primary' : ''}`}
     >

@@ -46,11 +46,14 @@ export const VITREA_CT_PRESETS: Record<string, DicomWlPreset> = {
  */
 export const CLINICAL_WL_PRESETS: Record<string, DicomWlPreset> = {
   ...VITREA_CT_PRESETS,
-  mriT1: { id: 'mriT1', label: 'MRI T1 Weighted (300/600)', wc: 300, ww: 600, modality: 'MR' },
-  mriT2: { id: 'mriT2', label: 'MRI T2 Weighted (500/1000)', wc: 500, ww: 1000, modality: 'MR' },
-  mriFlair: { id: 'mriFlair', label: 'MRI FLAIR (400/800)', wc: 400, ww: 800, modality: 'MR' },
-  mriStir: { id: 'mriStir', label: 'MRI STIR / Fluid Highlight (8192/16384)', wc: 8192, ww: 16384, modality: 'MR' },
-  mriDwi: { id: 'mriDwi', label: 'MRI DWI / Acute Restriction (400/800)', wc: 400, ww: 800, modality: 'MR' },
+  mriT1: { id: 'mriT1', label: 'MRI T1 Weighted (220/450)', wc: 220, ww: 450, modality: 'MR' },
+  mriT2: { id: 'mriT2', label: 'MRI T2 Weighted (350/700)', wc: 350, ww: 700, modality: 'MR' },
+  mriFlair: { id: 'mriFlair', label: 'MRI FLAIR (300/600)', wc: 300, ww: 600, modality: 'MR' },
+  mriStir: { id: 'mriStir', label: 'MRI STIR Fluid Sensitive (280/600)', wc: 280, ww: 600, modality: 'MR' },
+  mriDwi: { id: 'mriDwi', label: 'MRI DWI Acute Stroke (250/500)', wc: 250, ww: 500, modality: 'MR' },
+  mriAdc: { id: 'mriAdc', label: 'MRI ADC Diffusivity Map (150/300)', wc: 150, ww: 300, modality: 'MR' },
+  mriPdf: { id: 'mriPdf', label: 'MRI PDFS Joint / Cartilage (350/700)', wc: 350, ww: 700, modality: 'MR' },
+  mriGre: { id: 'mriGre', label: 'MRI GRE / SWI Bleed & Mineral (260/520)', wc: 260, ww: 520, modality: 'MR' },
   mriBone: { id: 'mriBone', label: 'MRI Spine / Bone (450/900)', wc: 450, ww: 900, modality: 'MR' },
 };
 
@@ -167,16 +170,18 @@ export function getAutoWlForSeries(options: AutoWlOptions): {
         return { ...CLINICAL_WL_PRESETS.mriStir, presetKey: 'mriStir', mrSequence: seq };
       case 'FLAIR':
         return { ...CLINICAL_WL_PRESETS.mriFlair, presetKey: 'mriFlair', mrSequence: seq };
-      case 'DWI':
       case 'ADC':
+        return { ...CLINICAL_WL_PRESETS.mriAdc, presetKey: 'mriAdc', mrSequence: seq };
+      case 'DWI':
         return { ...CLINICAL_WL_PRESETS.mriDwi, presetKey: 'mriDwi', mrSequence: seq };
       case 'T1':
       case 'T1_FS':
         return { ...CLINICAL_WL_PRESETS.mriT1, presetKey: 'mriT1', mrSequence: seq };
       case 'PDFS':
-        return { ...CLINICAL_WL_PRESETS.mriBone, presetKey: 'mriBone', mrSequence: seq };
-      case 'T2':
+        return { ...CLINICAL_WL_PRESETS.mriPdf, presetKey: 'mriPdf', mrSequence: seq };
       case 'GRE':
+        return { ...CLINICAL_WL_PRESETS.mriGre, presetKey: 'mriGre', mrSequence: seq };
+      case 'T2':
       default:
         return { ...CLINICAL_WL_PRESETS.mriT2, presetKey: 'mriT2', mrSequence: seq };
     }

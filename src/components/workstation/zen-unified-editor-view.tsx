@@ -6,12 +6,14 @@ import { ClinicalEditor } from '@/components/editor/clinical-editor';
 import { ReportEditorState } from '@/hooks/use-report-editor-actions';
 import { CompanionTab } from '@/hooks/use-companion-panel';
 import { HmisNormalTemplate } from '@/types/templates';
-import { Sparkles, Loader2, Zap, Globe } from 'lucide-react';
+import { Sparkles, Loader2, Pencil } from 'lucide-react';
 import { notify } from '@/services/notification.service';
 import { ImpressionFlavor } from '@/services/two-tier-impression.service';
 import { buildFindingsWithTechnique } from '@/lib/clinical-format';
-import { ReportingStylePicker } from '@/components/templates/reporting-style-picker';
-import { convertFindingsBetweenStyles } from '@/services/template-style-engine.service';
+import {
+  ImpressionStyleCycler,
+  AVAILABLE_IMPRESSION_STYLES,
+} from './impression-style-cycler';
 
 interface ZenUnifiedEditorViewProps {
   report: ReportEditorState;
@@ -43,9 +45,10 @@ export function ZenUnifiedEditorView({
   };
 
   const [flavor, setFlavor] = useState<ImpressionFlavor>('local_high_yield');
+  const [impressionCache, setImpressionCache] = useState<Record<string, string>>({});
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
 
-  const handleGenerateImpression = async () => {
+  const fetchAndApplyImpression = async (targetFlavor: ImpressionFlavor) => {
     const cleanFindings = (report.findings || '').replace(/<[^>]*>/g, '').trim();
     if (!cleanFindings) {
       notify.warning('Please document or dictate findings before synthesizing an impression.');
@@ -60,7 +63,7 @@ export function ZenUnifiedEditorView({
         body: JSON.stringify({
           findings: report.findings,
           modality,
-          flavor,
+          flavor: targetFlavor,
           patientAge: patientContext?.patientAge,
         }),
       });
@@ -70,21 +73,45 @@ export function ZenUnifiedEditorView({
         throw new Error(data.error || 'Failed generating impression');
       }
 
+      const newImp = data.impressionHtml || data.impressionText;
+      setImpressionCache((prev) => ({ ...prev, [targetFlavor]: newImp }));
       setReport((prev) => ({
         ...prev,
-        impression: data.impressionHtml || data.impressionText,
+        impression: newImp,
       }));
 
-      notify.success(
-        flavor === 'local_high_yield'
-          ? 'Generated Local High-Yield Impression'
-          : 'Generated Academic ACR Structured Impression'
-      );
+      const activeOption = AVAILABLE_IMPRESSION_STYLES.find((s) => s.id === targetFlavor);
+      notify.success(`Generated ${activeOption?.shortLabel || 'Impression'}`);
     } catch (err: any) {
       notify.error(err.message || 'Could not synthesize impression');
     } finally {
       setIsGeneratingImpression(false);
     }
+  };
+
+  const handleGenerateImpression = () => fetchAndApplyImpression(flavor);
+
+  const handleCycleFlavor = (direction: 'next' | 'prev') => {
+    const currentIdx = Math.max(0, AVAILABLE_IMPRESSION_STYLES.findIndex((s) => s.id === flavor));
+    const nextIdx =
+      direction === 'next'
+        ? (currentIdx + 1) % AVAILABLE_IMPRESSION_STYLES.length
+        : (currentIdx - 1 + AVAILABLE_IMPRESSION_STYLES.length) % AVAILABLE_IMPRESSION_STYLES.length;
+    const target = AVAILABLE_IMPRESSION_STYLES[nextIdx];
+    setFlavor(target.id);
+
+    if (impressionCache[target.id]) {
+      setReport((prev) => ({ ...prev, impression: impressionCache[target.id] }));
+      notify.info(`Switched to ${target.shortLabel}`);
+      return;
+    }
+    fetchAndApplyImpression(target.id);
+  };
+
+  const handleEditImpression = () => {
+    const el = document.querySelector('#unified-impression-container .ProseMirror') as HTMLElement;
+    if (el) el.focus();
+    notify.info('Editing Impression in Clinical Editor');
   };
 
   const findingsWithTechnique = React.useMemo(() => {
@@ -141,20 +168,6 @@ export function ZenUnifiedEditorView({
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              {!readOnly && (
-                <ReportingStylePicker
-                  mode="findings_only"
-                  compact
-                  onStyleChange={(newStyle) => {
-                    if (report.findings && report.findings.trim() !== '') {
-                      const converted = convertFindingsBetweenStyles(report.findings, newStyle);
-                      if (converted !== report.findings) {
-                        setReport((prev) => ({ ...prev, findings: converted }));
-                      }
-                    }
-                  }}
-                />
-              )}
               {report.criticalFinding && (
                 <span className="font-mono text-[10px] text-error font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
@@ -198,30 +211,39 @@ export function ZenUnifiedEditorView({
                 Impression
               </span>
 
-              {/* Two-Tier Flavor Switcher */}
+              {/* Multi-Style AI Cycler & Edit Button */}
               {!readOnly && (
-                <ReportingStylePicker
-                  mode="impression_only"
-                  compact
-                  onStyleChange={(_, flv) => setFlavor(flv)}
-                />
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <ImpressionStyleCycler
+                    currentStyle={flavor}
+                    onCycle={handleCycleFlavor}
+                    loading={isGeneratingImpression}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleEditImpression}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold text-secondary hover:text-primary hover:bg-surface-container border border-outline-variant/30 transition-all cursor-pointer"
+                    title="Edit impression in Clinical Editor"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGenerateImpression}
+                    disabled={isGeneratingImpression}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all disabled:opacity-50 cursor-pointer"
+                    title="Synthesize structured impression from current findings without hallucination"
+                  >
+                    {isGeneratingImpression ? (
+                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-2.5 h-2.5" />
+                    )}
+                    <span>{isGeneratingImpression ? 'Synthesizing...' : 'Generate'}</span>
+                  </button>
+                </div>
               )}
-
-              {/* Synthesize Button */}
-              <button
-                type="button"
-                onClick={handleGenerateImpression}
-                disabled={isGeneratingImpression}
-                className="h-6 px-2 rounded border border-primary/40 bg-primary/10 hover:bg-primary/20 text-[10px] font-semibold text-primary flex items-center gap-1 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
-                title="Synthesize impression from active findings using selected flavor"
-              >
-                {isGeneratingImpression ? (
-                  <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                ) : (
-                  <Sparkles className="w-3 h-3 text-primary" />
-                )}
-                <span>Generate</span>
-              </button>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
@@ -238,7 +260,7 @@ export function ZenUnifiedEditorView({
               )}
             </div>
           </div>
-          <div className="pt-1">
+          <div className="pt-1" id="unified-impression-container">
             <ClinicalEditor
               key={`unified-impression-${studyId}-${templateRev}`}
               content={report.impression}

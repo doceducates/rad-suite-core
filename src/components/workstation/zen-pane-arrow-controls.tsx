@@ -89,7 +89,7 @@ export function ZenPaneArrowControls({
       onTouchEnd={handleTouchEnd}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        'absolute right-2.5 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1 bg-zinc-950/85 dark:bg-zinc-900/85 backdrop-blur-md px-1 py-1.5 rounded-full border border-outline-variant/60 shadow-lg pointer-events-auto select-none transition-opacity duration-200',
+        'absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1 bg-zinc-950/85 dark:bg-zinc-900/85 backdrop-blur-md px-1 py-1.5 rounded-full border border-outline-variant/60 shadow-lg pointer-events-auto select-none transition-opacity duration-200',
         isMobile
           ? 'opacity-80 active:opacity-100 hover:opacity-100'
           : visible

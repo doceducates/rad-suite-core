@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DicomTool } from '@/components/dicom/dicom-toolbar';
+import { ViewportLayoutMode, getResponsiveLayoutForCount } from '@/types/viewport';
 import { StitchMaximizedBadge } from './stitch-quad-grid-overlay';
 import { StitchGridPane } from './stitch-grid-pane';
 import { SliceGeometry } from '@/services/dicom-geometry.service';
@@ -30,6 +31,7 @@ interface StitchQuadGridProps {
   onActiveSeriesChange?: (seriesIndex: number) => void;
   paneSeriesMap?: Record<number, number>;
   onUpdatePaneSeries?: (paneIdx: number, seriesIdx: number) => void;
+  onSelectLayout?: (mode: ViewportLayoutMode) => void;
 }
 
 export function StitchQuadGrid(props: StitchQuadGridProps) {
@@ -37,7 +39,7 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     accessionNumber, modality, isLocalCase = false, localCaseId, localSeries = [], seriesList = [],
     tool = 'pan', preset = 'soft', syncScroll = true, scoutLinesActive = true, invert = false,
     resetKey, rows = 2, cols = 2, activeSeriesIndex = 0, seriesSelectToken = 0, onActiveSeriesChange,
-    paneSeriesMap: propPaneSeriesMap, onUpdatePaneSeries,
+    paneSeriesMap: propPaneSeriesMap, onUpdatePaneSeries, onSelectLayout,
   } = props;
   const [activeCellIndex, setActiveCellIndex] = useState(0);
   const [localPaneSeriesMap, setLocalPaneSeriesMap] = useState<Record<number, number>>({});
@@ -109,29 +111,50 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
   const handleToggleSubtraction = useCallback((pIdx: number) => {
     setSubtractedPanes((prev) => { const n = new Set(prev); if (n.has(pIdx)) n.delete(pIdx); else n.add(pIdx); return n; });
   }, []);
-
   const handleToggleLink = useCallback((pIdx: number) => {
     setUnlinkedPanes((prev) => { const n = new Set(prev); if (n.has(pIdx)) n.delete(pIdx); else n.add(pIdx); return n; });
   }, []);
 
   const handleSnapshotPane = useCallback((paneIdx: number) => {
-    const canvases = document.querySelectorAll('canvas');
-    if (canvases && canvases[paneIdx]) {
+    const canvas = document.querySelectorAll('canvas')?.[paneIdx];
+    if (canvas) {
       try {
         const a = document.createElement('a');
-        a.href = canvases[paneIdx].toDataURL('image/png');
+        a.href = canvas.toDataURL('image/png');
         a.download = `Snapshot_P${paneIdx + 1}_${accessionNumber}.png`;
         a.click();
-      } catch (err) {
-        console.warn('Snapshot error:', err);
-      }
+      } catch (err) { console.warn('Snapshot error:', err); }
     }
   }, [accessionNumber]);
 
   const handleClosePane = useCallback((paneIdx: number) => {
-    if (onUpdatePaneSeries) onUpdatePaneSeries(paneIdx, -1);
-    else setLocalPaneSeriesMap((prev) => ({ ...prev, [paneIdx]: -1 }));
-  }, [onUpdatePaneSeries]);
+    const activePanes: number[] = [];
+    for (let i = 0; i < totalPanes; i++) {
+      if (i === paneIdx) continue;
+      const sIdx = paneSeriesMap[i] ?? (i % (availableSeries.length || 1));
+      if (sIdx !== -1) activePanes.push(sIdx);
+    }
+    const rem = activePanes.length;
+    if (rem <= 0) {
+      onSelectLayout?.('1x1');
+      if (onUpdatePaneSeries) onUpdatePaneSeries(0, -1);
+      else setLocalPaneSeriesMap({ 0: -1 });
+      return;
+    }
+    const newMode = getResponsiveLayoutForCount(rem, r > c);
+    const newMap: Record<number, number> = {};
+    activePanes.forEach((sIdx, newIdx) => {
+      newMap[newIdx] = sIdx;
+      onUpdatePaneSeries?.(newIdx, sIdx);
+    });
+    for (let i = rem; i < totalPanes; i++) {
+      newMap[i] = -1;
+      onUpdatePaneSeries?.(i, -1);
+    }
+    setLocalPaneSeriesMap(newMap);
+    onSelectLayout?.(newMode);
+    setActiveCellIndex(0);
+  }, [totalPanes, paneSeriesMap, availableSeries.length, r, c, onSelectLayout, onUpdatePaneSeries]);
 
   const handlePaneSliceChange = useCallback(
     (paneIdx: number, sl: number, total: number) => {
@@ -145,25 +168,13 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     if (fromIdx === toIdx) return;
     const fromSeries = paneSeriesMap[fromIdx] ?? (fromIdx % (availableSeries.length || 1));
     const toSeries = paneSeriesMap[toIdx] ?? (toIdx % (availableSeries.length || 1));
-    if (onUpdatePaneSeries) {
-      onUpdatePaneSeries(fromIdx, toSeries);
-      onUpdatePaneSeries(toIdx, fromSeries);
-    } else {
-      setLocalPaneSeriesMap((prev) => ({ ...prev, [fromIdx]: toSeries, [toIdx]: fromSeries }));
-    }
-    clearDirectSlice(fromIdx);
-    clearDirectSlice(toIdx);
-    setActiveCellIndex(toIdx);
-    setPendingSwapPane(null);
+    if (onUpdatePaneSeries) { onUpdatePaneSeries(fromIdx, toSeries); onUpdatePaneSeries(toIdx, fromSeries); }
+    else setLocalPaneSeriesMap((p) => ({ ...p, [fromIdx]: toSeries, [toIdx]: fromSeries }));
+    clearDirectSlice(fromIdx); clearDirectSlice(toIdx); setActiveCellIndex(toIdx); setPendingSwapPane(null);
   }, [availableSeries.length, clearDirectSlice, onUpdatePaneSeries, paneSeriesMap]);
 
-  const handleRearrangeClick = useCallback((paneIdx: number) => {
-    setPendingSwapPane((prev) => {
-      if (prev === null) return paneIdx;
-      if (prev === paneIdx) return null;
-      executeSwap(prev, paneIdx);
-      return null;
-    });
+  const handleRearrangeClick = useCallback((pIdx: number) => {
+    setPendingSwapPane((prev) => (prev === null ? pIdx : prev === pIdx ? null : (executeSwap(prev, pIdx), null)));
   }, [executeSwap]);
 
   const handlePaneClick = useCallback((idx: number) => {
@@ -172,8 +183,7 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
       else setPendingSwapPane(null);
       return;
     }
-    setActiveCellIndex(idx);
-    clearDirectSlice(idx);
+    setActiveCellIndex(idx); clearDirectSlice(idx);
     if (availableSeries.length > 0) {
       const mappedIdx = paneSeriesMap[idx] ?? (idx % availableSeries.length);
       if (mappedIdx >= 0) onActiveSeriesChange?.(mappedIdx);
@@ -218,7 +228,6 @@ export function StitchQuadGrid(props: StitchQuadGridProps) {
     e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
     if (dragOverPaneIndex !== pIdx) setDragOverPaneIndex(pIdx);
   }, [dragOverPaneIndex]);
-
   const handleDragLeave = useCallback((_pIdx: number, e: React.DragEvent) => {
     e.preventDefault();
     if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverPaneIndex(null);

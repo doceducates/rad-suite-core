@@ -231,6 +231,7 @@ export function ZenReportHeader({
           {onApplyTemplate && (
             <ZenTemplateSelector
               modality={modality}
+              studyDescription={studyDescription}
               onApplyTemplate={onApplyTemplate}
               onOpenSaveTemplate={onSaveAsTemplate}
             />

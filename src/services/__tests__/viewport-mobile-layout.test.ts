@@ -1,29 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import type { ViewportLayoutMode, MobileTouchMode } from '@/types/viewport';
+import { parseLayoutDimensions, formatLayoutMode, getResponsiveLayoutForCount } from '@/types/viewport';
 
 describe('Viewport Mobile Layout & Touch Modes', () => {
-  it('supports all layout modes including 3x3 and 4x4', () => {
-    const modes: ViewportLayoutMode[] = ['1x1', '1x2', '1x3', '2x2', '3x3', '4x4'];
-    expect(modes).toHaveLength(6);
+  it('supports standard and dynamic layout modes', () => {
+    const modes: ViewportLayoutMode[] = ['1x1', '1x2', '1x3', '2x2', '2x3', '4x1', '3x3', '4x4'];
+    expect(modes.length).toBeGreaterThanOrEqual(6);
   });
 
-  it('correctly maps layout mode to row, column, and total cell counts', () => {
-    function getGridDimensions(layout: ViewportLayoutMode) {
-      switch (layout) {
-        case '1x2': return { cellCount: 2, rows: 1, cols: 2 };
-        case '1x3': return { cellCount: 3, rows: 1, cols: 3 };
-        case '2x2': return { cellCount: 4, rows: 2, cols: 2 };
-        case '3x3': return { cellCount: 9, rows: 3, cols: 3 };
-        case '4x4': return { cellCount: 16, rows: 4, cols: 4 };
-        default: return { cellCount: 1, rows: 1, cols: 1 };
-      }
-    }
+  it('correctly maps arbitrary layout modes to rows and columns without collapsing', () => {
+    expect(parseLayoutDimensions('1x1')).toEqual({ rows: 1, cols: 1 });
+    expect(parseLayoutDimensions('1x2')).toEqual({ rows: 1, cols: 2 });
+    expect(parseLayoutDimensions('2x2')).toEqual({ rows: 2, cols: 2 });
+    expect(parseLayoutDimensions('2x3')).toEqual({ rows: 2, cols: 3 }); // 6 views, not 9!
+    expect(parseLayoutDimensions('3x2')).toEqual({ rows: 3, cols: 2 });
+    expect(parseLayoutDimensions('4x1')).toEqual({ rows: 4, cols: 1 }); // 4 stacked vertical, not 16!
+    expect(parseLayoutDimensions('1x4')).toEqual({ rows: 1, cols: 4 });
+    expect(parseLayoutDimensions('3x3')).toEqual({ rows: 3, cols: 3 });
+    expect(parseLayoutDimensions('4x4')).toEqual({ rows: 4, cols: 4 });
+  });
 
-    expect(getGridDimensions('1x1')).toEqual({ cellCount: 1, rows: 1, cols: 1 });
-    expect(getGridDimensions('1x2')).toEqual({ cellCount: 2, rows: 1, cols: 2 });
-    expect(getGridDimensions('2x2')).toEqual({ cellCount: 4, rows: 2, cols: 2 });
-    expect(getGridDimensions('3x3')).toEqual({ cellCount: 9, rows: 3, cols: 3 });
-    expect(getGridDimensions('4x4')).toEqual({ cellCount: 16, rows: 4, cols: 4 });
+  it('formats rows and columns into ViewportLayoutMode string', () => {
+    expect(formatLayoutMode(2, 3)).toBe('2x3');
+    expect(formatLayoutMode(4, 1)).toBe('4x1');
+    expect(formatLayoutMode(1, 4)).toBe('1x4');
+    expect(formatLayoutMode(3, 3)).toBe('3x3');
   });
 
   it('correctly calculates 2D matrix coordinates for 4x4 grid cells', () => {
@@ -52,6 +53,16 @@ describe('Viewport Mobile Layout & Touch Modes', () => {
     expect(computeTargetSlice(1.0, maxSlices)).toBe(89);
     expect(computeTargetSlice(1.5, maxSlices)).toBe(89);
     expect(computeTargetSlice(0.5, maxSlices)).toBe(45);
+  });
+
+  it('correctly calculates responsive reflow layout when closing panes', () => {
+    expect(getResponsiveLayoutForCount(1)).toBe('1x1');
+    expect(getResponsiveLayoutForCount(2)).toBe('1x2');
+    expect(getResponsiveLayoutForCount(2, true)).toBe('2x1');
+    expect(getResponsiveLayoutForCount(3)).toBe('1x3');
+    expect(getResponsiveLayoutForCount(4)).toBe('2x2');
+    expect(getResponsiveLayoutForCount(5)).toBe('1x5');
+    expect(getResponsiveLayoutForCount(6)).toBe('2x3');
   });
 
   it('correctly differentiates mobile touch modes', () => {

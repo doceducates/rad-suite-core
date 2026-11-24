@@ -24,6 +24,7 @@ docs/
 │   └── google-docs-drive.md            # Google Drive/Docs clinical export, OAuth, auto-sync
 ├── features/                           # Workstation features, clinical workflows, and UI tools
 │   ├── landing-and-alpha-access.md     # Public landing, alpha waitlist, invite codes, screen RBAC
+│   ├── brand-identity-and-single-source-icons.md # Single source of truth SVG, clinical green scheme, multi-platform generator
 │   ├── workstation-and-reporting.md    # Standby explorer, split/PiP reporting modes, mobile suite & FAB
 │   ├── worklist-and-allocation.md      # Resident claim locks, discrepancy matrix, WhatsApp handover, multi-sort
 │   ├── local-ai-and-dictation.md       # Llama-server runner, port 8090, dictation parser, regional prompts
@@ -62,6 +63,7 @@ docs/
 | **HMIS Portal Integration** | [`docs/integrations/hmis-portal.md`](./integrations/hmis-portal.md) | Zero-submit/reject safety, Livewire sync, collision release, tracking API, Proceeded Patients harvesting |
 | **Google Docs & Drive Sync** | [`docs/integrations/google-docs-drive.md`](./integrations/google-docs-drive.md) | Restricted OAuth (`drive.file`), clinical folder tree, native doc upload, auto-sync |
 | **Landing Page & Alpha Gate** | [`docs/features/landing-and-alpha-access.md`](./features/landing-and-alpha-access.md) | High-conversion landing, pre-registration waitlist, invite codes, screen-level RBAC & admin |
+| **Brand Identity & Icon Pipeline** | [`docs/features/brand-identity-and-single-source-icons.md`](./features/brand-identity-and-single-source-icons.md) | Canonical SVG master, clinical green palette (#8ecf9e/#4a7c59), automated multi-res favicons, Tauri & Android mipmap generator |
 | **Workstation UI & Reporting** | [`docs/features/workstation-and-reporting.md`](./features/workstation-and-reporting.md) | Standby screen, split/PiP reporting modes, Case Insights & Viva side drawer, mobile diagnostic suite & FAB |
 | **Consultant Discussion & Versioned Sync** | [`docs/features/consultant-discussion-and-versioned-sync.md`](./features/consultant-discussion-and-versioned-sync.md) | Decluttered 50/50 discussion workspace, directly editable positive findings, notes & voice dictation, SQLite persistence, versioned report sync |
 | **Worklist, Allocation & Handover** | [`docs/features/worklist-and-allocation.md`](./features/worklist-and-allocation.md) | Case claim locks, discrepancy matrix, WhatsApp clinical handover, multi-column sorting |

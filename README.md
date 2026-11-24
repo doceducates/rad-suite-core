@@ -132,13 +132,19 @@ API_SECRET_KEY="your-gateway-key"
 ### Development Server
 ```bash
 npm run dev
-# Workstation available at http://localhost:3000
+# Workstation available at http://localhost:3780
+```
+
+### Brand Icons & Single Source of Truth
+```bash
+npm run generate:icons
+# Compiles web favicons, desktop ICO/ICNS/PNGs, and Android mipmaps from public/brand/radsuite-icon.svg
 ```
 
 ### Running Tests
 ```bash
 npm test
-# Runs 77 Vitest test suites (356 unit & integration tests)
+# Runs Vitest unit & integration test suites
 ```
 
 ---

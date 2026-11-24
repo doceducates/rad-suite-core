@@ -14,6 +14,9 @@ interface UseDicomTouchOptions {
   isSpacePressed: boolean;
   containerRef?: React.RefObject<HTMLElement | null>;
   touchMode?: MobileTouchMode;
+  onZoomChange?: (z: number) => void;
+  onPanChange?: (p: { x: number; y: number }, delta?: { dx: number; dy: number }) => void;
+  onLongPress?: (x: number, y: number) => void;
 }
 
 export function useDicomTouch({
@@ -26,6 +29,9 @@ export function useDicomTouch({
   isSpacePressed,
   containerRef,
   touchMode = 'scrub',
+  onZoomChange,
+  onPanChange,
+  onLongPress,
 }: UseDicomTouchOptions) {
   const pinchDist = useRef<number | null>(null);
   const pinchMidpoint = useRef<{ x: number; y: number } | null>(null);
@@ -39,11 +45,20 @@ export function useDicomTouch({
   const pinchCooldownUntil = useRef<number>(0);
   const singleTouchStartTime = useRef<number>(0);
   const singleTouchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       const now = Date.now();
       if (e.touches.length >= 2) {
+        clearLongPress();
         // Multi-touch initialization (2-finger zoom/pan)
         isPinching.current = true;
         const t0 = e.touches[0];
@@ -67,6 +82,11 @@ export function useDicomTouch({
         isPinching.current = false;
         singleTouchStartTime.current = now;
         singleTouchStartPos.current = { x: t.clientX, y: t.clientY };
+
+        clearLongPress();
+        longPressTimer.current = setTimeout(() => {
+          onLongPress?.(t.clientX, t.clientY);
+        }, 500);
 
         const prevTapPos = lastTapPos.current;
         const distFromLastTap = prevTapPos
@@ -125,18 +145,27 @@ export function useDicomTouch({
 
         setZoom((prevZoom) => {
           const nextZoom = Math.max(0.2, Math.min(10.0, Number((prevZoom * ratio).toFixed(3))));
+          onZoomChange?.(nextZoom);
           if (containerRef?.current && nextZoom !== prevZoom) {
             const rect = containerRef.current.getBoundingClientRect();
             const focalX = newMidpoint.x - (rect.left + rect.width / 2);
             const focalY = newMidpoint.y - (rect.top + rect.height / 2);
             const zoomRatio = nextZoom / prevZoom;
 
-            setPan((p) => ({
-              x: Number((focalX - (focalX - (p.x + panDx)) * zoomRatio).toFixed(1)),
-              y: Number((focalY - (focalY - (p.y + panDy)) * zoomRatio).toFixed(1)),
-            }));
+            setPan((p) => {
+              const nextPan = {
+                x: Number((focalX - (focalX - (p.x + panDx)) * zoomRatio).toFixed(1)),
+                y: Number((focalY - (focalY - (p.y + panDy)) * zoomRatio).toFixed(1)),
+              };
+              onPanChange?.(nextPan, { dx: panDx, dy: panDy });
+              return nextPan;
+            });
           } else {
-            setPan((p) => ({ x: p.x + panDx, y: p.y + panDy }));
+            setPan((p) => {
+              const nextPan = { x: p.x + panDx, y: p.y + panDy };
+              onPanChange?.(nextPan, { dx: panDx, dy: panDy });
+              return nextPan;
+            });
           }
           return nextZoom;
         });
@@ -148,6 +177,7 @@ export function useDicomTouch({
 
       // 2. Single-Finger Drag & Actions
       if (e.touches.length === 1 && lastPos.current) {
+        clearLongPress();
         const now = Date.now();
 
         // STRICT COOLDOWN: Discard any single-finger move within 300ms of pinch release
@@ -174,12 +204,20 @@ export function useDicomTouch({
 
         // Explicit tool overrides
         if (isSpacePressed || activeTool === 'pan') {
-          setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+          setPan((p) => {
+            const nextPan = { x: p.x + dx, y: p.y + dy };
+            onPanChange?.(nextPan, { dx, dy });
+            return nextPan;
+          });
           return;
         }
         if (activeTool === 'zoom') {
           const factor = Math.exp(-dy * 0.008);
-          setZoom((z) => Math.max(0.2, Math.min(10.0, Number((z * factor).toFixed(3)))));
+          setZoom((z) => {
+            const nextZoom = Math.max(0.2, Math.min(10.0, Number((z * factor).toFixed(3))));
+            onZoomChange?.(nextZoom);
+            return nextZoom;
+          });
           return;
         }
 
@@ -211,10 +249,11 @@ export function useDicomTouch({
         }
       }
     },
-    [changeSliceByUser, containerRef, isSpacePressed, setPan, setWc, setWw, setZoom, touchMode]
+    [changeSliceByUser, containerRef, isSpacePressed, setPan, setWc, setWw, setZoom, touchMode, onZoomChange, onPanChange, clearLongPress]
   );
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    clearLongPress();
     if (isPinching.current || e.touches.length > 0) {
       // Transition from pinch or partial release: enforce 300ms cooldown window
       pinchCooldownUntil.current = Date.now() + 300;
@@ -224,7 +263,7 @@ export function useDicomTouch({
     pinchMidpoint.current = null;
     lastPos.current = null;
     sliceAccumulator.current = 0;
-  }, []);
+  }, [clearLongPress]);
 
   return { handleTouchStart, handleTouchMove, handleTouchEnd };
 }

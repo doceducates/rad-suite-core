@@ -37,25 +37,13 @@ export function RadSuiteLogo({
           currentSize.icon
         )}
       >
-        <svg
-          viewBox="0 0 128 128"
-          className="w-full h-full"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect width="128" height="128" rx="28" fill="#101419" stroke="#252b35" strokeWidth="2" />
-          <circle cx="64" cy="64" r="48" stroke="#8ecf9e" strokeWidth="2" strokeDasharray="8 6" strokeOpacity="0.4" />
-          <circle cx="64" cy="64" r="38" stroke="#4a7c59" strokeWidth="2.5" strokeOpacity="0.45" strokeDasharray="20 10 5 10" />
-          <line x1="64" y1="16" x2="64" y2="28" stroke="#8ecf9e" strokeWidth="3" strokeLinecap="round" />
-          <line x1="64" y1="100" x2="64" y2="112" stroke="#8ecf9e" strokeWidth="3" strokeLinecap="round" />
-          <line x1="16" y1="64" x2="28" y2="64" stroke="#8ecf9e" strokeWidth="3" strokeLinecap="round" />
-          <line x1="100" y1="64" x2="112" y2="64" stroke="#8ecf9e" strokeWidth="3" strokeLinecap="round" />
-          <path d="M44 38 C44 36.3 45.3 35 47 35 H52 C53.7 35 55 36.3 55 38 V90 C55 91.7 53.7 93 52 93 H47 C45.3 93 44 91.7 44 90 Z" fill="#8ecf9e" />
-          <path d="M52 35 H72 C81.9 35 90 42.2 90 51 C90 59.8 81.9 67 72 67 H54 V56 H71 C76 56 80 53.8 80 51 C80 48.2 76 46 71 46 H52 Z" fill="#8ecf9e" />
-          <path d="M68 64 L86.5 89.5 C87.6 91 86.8 93 84.8 93 H74.2 C73.1 93 72.1 92.4 71.4 91.5 L56 67 H69 Z" fill="#4a7c59" />
-          <circle cx="70" cy="51" r="5" fill="#ffffff" />
-          <circle cx="70" cy="51" r="7.5" stroke="#8ecf9e" strokeWidth="1.5" strokeOpacity="0.8" />
-        </svg>
+        {/* Single Source of Truth Brand Icon */}
+        <img
+          src="/brand/radsuite-icon.svg"
+          alt="Rad Suite"
+          className="w-full h-full object-contain select-none pointer-events-none"
+          draggable={false}
+        />
       </div>
 
       {/* Typography */}

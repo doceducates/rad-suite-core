@@ -38,11 +38,11 @@ describe('dicom-wl-presets.service', () => {
   it('correctly maps MRI sequences (T1, T2, FLAIR, STIR, DWI)', () => {
     const t1 = getAutoWlForSeries({ seriesDescription: 'Sagittal T1 SE', modality: 'MRI' });
     expect(t1.presetKey).toBe('mriT1');
-    expect(t1.ww).toBe(600);
+    expect(t1.ww).toBe(450);
 
     const t2 = getAutoWlForSeries({ seriesDescription: 'Axial T2 FRFSE', modality: 'MR' });
     expect(t2.presetKey).toBe('mriT2');
-    expect(t2.ww).toBe(1000);
+    expect(t2.ww).toBe(700);
 
     const flair = getAutoWlForSeries({ seriesDescription: 'Coronal FLAIR', modality: 'MR' });
     expect(flair.presetKey).toBe('mriFlair');

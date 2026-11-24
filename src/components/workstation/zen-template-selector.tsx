@@ -9,6 +9,7 @@ import { notify } from '@/services/notification.service';
 
 interface ZenTemplateSelectorProps {
   modality: string;
+  studyDescription?: string;
   onApplyTemplate: (tpl: HmisNormalTemplate) => void;
   onOpenSaveTemplate?: () => void;
   className?: string;
@@ -16,6 +17,7 @@ interface ZenTemplateSelectorProps {
 
 export function ZenTemplateSelector({
   modality,
+  studyDescription,
   onApplyTemplate,
   onOpenSaveTemplate,
   className = '',
@@ -38,12 +40,27 @@ export function ZenTemplateSelector({
     return getTemplatesByModality(mod);
   }, [modality, refreshKey]);
 
-  // Set default initial template selection based on modality
+  // Set default initial template selection based on study description & modality
   useEffect(() => {
     if (selectedIds.length === 0 && availableTemplates.length > 0) {
-      setSelectedIds([availableTemplates[0].id]);
+      const desc = (studyDescription || '').toUpperCase();
+      let matched = availableTemplates[0];
+      if (desc.includes('SPINE') || desc.includes('LS') || desc.includes('LUMBAR')) {
+        const spineTpl = availableTemplates.find((t) => t.id.includes('spine') || t.id.includes('ls') || t.name.toUpperCase().includes('SPINE') || t.name.toUpperCase().includes('LUMB'));
+        if (spineTpl) matched = spineTpl;
+      } else if (desc.includes('CERVICAL') || desc.includes('CS')) {
+        const csTpl = availableTemplates.find((t) => t.id.includes('cervical') || t.name.toUpperCase().includes('CERVICAL'));
+        if (csTpl) matched = csTpl;
+      } else if (desc.includes('KNEE')) {
+        const kneeTpl = availableTemplates.find((t) => t.id.includes('knee') || t.name.toUpperCase().includes('KNEE'));
+        if (kneeTpl) matched = kneeTpl;
+      } else if (desc.includes('BRAIN') || desc.includes('HEAD')) {
+        const brainTpl = availableTemplates.find((t) => t.id.includes('brain') || t.name.toUpperCase().includes('BRAIN'));
+        if (brainTpl) matched = brainTpl;
+      }
+      setSelectedIds([matched.id]);
     }
-  }, [availableTemplates, selectedIds.length]);
+  }, [availableTemplates, selectedIds.length, studyDescription]);
 
   // Close on outside click or Escape
   useEffect(() => {

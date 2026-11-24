@@ -100,7 +100,7 @@ export function ZenDicomViewportHeader({
   return (
     <div
       ref={headerRef}
-      className="h-9 px-2 bg-surface-container/95 border-b border-outline-variant/60 flex items-center justify-between text-xs text-foreground shrink-0 select-none gap-1.5 relative z-30"
+      className="h-9 px-2 bg-surface-container/95 border-b border-outline-variant/60 flex items-center justify-between text-xs text-foreground shrink-0 select-none gap-1.5 relative z-40"
     >
       {/* Left Cluster: Sequence Drawer Toggle + Graph of Views */}
       <div className="flex items-center gap-1 min-w-0 shrink-0">
@@ -133,8 +133,8 @@ export function ZenDicomViewportHeader({
                   ? 'bg-primary/15 border-primary text-primary'
                   : 'bg-surface-container-high hover:bg-surface-container-highest border-outline-variant/60 text-muted-foreground hover:text-foreground'
               )}
-              title="Graph of Views — Select Viewport Layout"
-              aria-label="Select Viewport Layout"
+              title="Views — Select Layout"
+              aria-label="Select Layout"
             >
               <Grid className="w-3.5 h-3.5" />
               <span className="font-mono text-[10px] hidden sm:inline">{layout}</span>

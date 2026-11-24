@@ -7,6 +7,7 @@ import { StitchQuadGrid } from './stitch-quad-grid';
 import { ZenDicomSeriesDrawer } from './zen-dicom-series-drawer';
 import type { DicomTool } from '@/components/dicom/dicom-toolbar';
 import type { ViewportLayoutMode } from '@/types/viewport';
+import { parseLayoutDimensions } from '@/types/viewport';
 import { cn } from '@/lib/utils';
 
 export interface ZenDicomViewportContainerProps {
@@ -22,15 +23,6 @@ export interface ZenDicomViewportContainerProps {
   isCompanion?: boolean;
   className?: string;
 }
-
-const LAYOUT_DIMENSIONS: Record<ViewportLayoutMode, { rows: number; cols: number }> = {
-  '1x1': { rows: 1, cols: 1 },
-  '1x2': { rows: 1, cols: 2 },
-  '1x3': { rows: 1, cols: 3 },
-  '2x2': { rows: 2, cols: 2 },
-  '3x3': { rows: 3, cols: 3 },
-  '4x4': { rows: 4, cols: 4 },
-};
 
 export function ZenDicomViewportContainer({
   accessionNumber,
@@ -55,7 +47,7 @@ export function ZenDicomViewportContainer({
 
   const effectiveSeries = (seriesList && seriesList.length > 0) ? seriesList : localSeries;
   const activeSeries = effectiveSeries[activeSeriesIndex] || effectiveSeries[0];
-  const { rows, cols } = LAYOUT_DIMENSIONS[viewportLayout] || { rows: 1, cols: 1 };
+  const { rows, cols } = parseLayoutDimensions(viewportLayout);
   const isDocked = !isCompanion;
 
   return (
@@ -102,7 +94,7 @@ export function ZenDicomViewportContainer({
 
         {/* Viewport Canvas: 1x1 Single Viewport or Multi-Pane Grid */}
         <div className="flex-1 min-w-0 h-full relative">
-          {viewportLayout === '1x1' ? (
+          {(rows === 1 && cols === 1) ? (
             <ZenDicomViewer
               accessionNumber={accessionNumber}
               modality={modality}
@@ -134,6 +126,7 @@ export function ZenDicomViewportContainer({
               tool={activeDicomTool}
               invert={localInvert}
               resetKey={viewerResetKey}
+              onSelectLayout={setViewportLayout}
             />
           )}
         </div>

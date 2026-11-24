@@ -12,7 +12,7 @@ const ImpressionTierSchema = z.object({
   findings: z.string().min(1, 'Findings text is required to synthesize impression'),
   modality: z.string().optional().default('MRI'),
   patientAge: z.union([z.string(), z.number()]).optional(),
-  flavor: z.enum(['local_high_yield', 'international_structured']).default('local_high_yield'),
+  flavor: z.enum(['local_high_yield', 'international_structured', 'concise_bullets']).default('local_high_yield'),
   studyDescription: z.string().optional(),
 });
 

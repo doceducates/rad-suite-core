@@ -85,5 +85,9 @@ describe('template-style-engine', () => {
 
     const structured = formatImpressionForStyle(multiBulletImpression, 'international_structured');
     expect(structured.split('\n').length).toBe(4);
+
+    const concise = formatImpressionForStyle(multiBulletImpression, 'concise_bullets');
+    expect(concise.split('\n').length).toBe(3);
+    expect(concise).toContain('1. Normal CT chest.');
   });
 });

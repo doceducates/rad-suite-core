@@ -16,6 +16,7 @@ interface UseDicomViewportOptions {
   onZoomChange?: (zoom: number) => void;
   externalPan?: { x: number; y: number };
   onPanChange?: (pan: { x: number; y: number }, delta?: { dx: number; dy: number }) => void;
+  onLongPress?: (x: number, y: number) => void;
 }
 
 export function useDicomViewport({
@@ -29,6 +30,7 @@ export function useDicomViewport({
   onZoomChange,
   externalPan,
   onPanChange,
+  onLongPress,
 }: UseDicomViewportOptions) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -251,6 +253,9 @@ export function useDicomViewport({
     isSpacePressed,
     containerRef,
     touchMode,
+    onZoomChange,
+    onPanChange,
+    onLongPress,
   });
 
   return {

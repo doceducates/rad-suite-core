@@ -7,6 +7,7 @@ import { drawMedicalDicomSlice } from '@/components/dicom/dicom-canvas-renderer'
 interface UseDicomCanvasRendererOptions {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   isRealDcm: boolean;
+  isDemo?: boolean;
   parsedSlice: ParsedDicomFile | null;
   slice: number;
   maxSlices: number;
@@ -23,6 +24,7 @@ interface UseDicomCanvasRendererOptions {
 export function useDicomCanvasRenderer({
   canvasRef,
   isRealDcm,
+  isDemo = false,
   parsedSlice,
   slice,
   maxSlices,
@@ -54,7 +56,7 @@ export function useDicomCanvasRenderer({
         invert
       );
       ctx.putImageData(imgData, 0, 0);
-    } else {
+    } else if (isDemo) {
       canvas.width = 640;
       canvas.height = 480;
       drawMedicalDicomSlice({
@@ -72,8 +74,13 @@ export function useDicomCanvasRenderer({
         zoom,
         pan,
       });
+    } else {
+      canvas.width = 640;
+      canvas.height = 480;
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  }, [enabled, isRealDcm, parsedSlice, slice, maxSlices, modality, preset, zoom, pan, ww, wc, invert, canvasRef]);
+  }, [enabled, isRealDcm, isDemo, parsedSlice, slice, maxSlices, modality, preset, zoom, pan, ww, wc, invert, canvasRef]);
 
   useEffect(() => {
     renderCanvas();

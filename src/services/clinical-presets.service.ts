@@ -60,18 +60,19 @@ export function classifyMrSequence(meta: DicomSequenceMeta = {}): string {
   const tr = meta.repetitionTime ? Number(meta.repetitionTime) : undefined;
   const te = meta.echoTime ? Number(meta.echoTime) : undefined;
 
-  if (text.includes('STIR') || text.includes('TIRM') || (ti && ti >= 100 && ti <= 250)) return 'STIR';
-  if (text.includes('FLAIR') || (ti && ti > 1500)) return 'FLAIR';
-  if (text.includes('ADC') || text.includes('DIFFUSION COEFF')) return 'ADC';
-  if (/\b(DWI|DIFF|TRACE|B1000|B800)\b/.test(text)) return 'DWI';
+  if (/\b(STIR|TIRM|IR\s*FSE)\b/.test(text) || (ti && ti >= 100 && ti <= 250)) return 'STIR';
+  if (/\b(FLAIR|DARK\s*FLUID)\b/.test(text) || (ti && ti > 1500)) return 'FLAIR';
+  if ((/\b(E?ADC|DIFFUSION\s*COEFF|ADC_MAP)\b/.test(text) || text.includes('ADC')) && !text.includes('EXP_ADC')) return 'ADC';
+  if (/\b(DWI|DIFF|TRACE|B1000|B800|B500|EXP_ADC|DTI)\b/.test(text)) return 'DWI';
   if (/\b(FS|FAT\s*SAT|SPAIR|SPIR)\b/.test(text)) {
     if (text.includes('PD')) return 'PDFS';
     if (text.includes('T1')) return 'T1_FS';
     return 'T2_FS';
   }
-  if (/\b(GRE|SWI|T2\*|HEMO|MERGE|CISS|FIESTA)\b/.test(text)) return 'GRE';
-  if (text.includes('T1') || (tr && te && tr < 800 && te < 30)) return 'T1';
-  if (text.includes('T2') || (tr && te && tr > 1800 && te >= 70)) return 'T2';
+  if (/\b(GRE|SWI|T2\*|HEMO|MERGE|CISS|FIESTA|FISP|FLASH|MEDIC)\b/.test(text)) return 'GRE';
+  if (/\bPD\b/.test(text) || (tr && te && tr > 1800 && te < 40)) return 'PD';
+  if (/\bT1\b/.test(text) || (tr && te && tr < 800 && te < 30)) return 'T1';
+  if (/\bT2\b/.test(text) || (tr && te && tr > 1800 && te >= 70)) return 'T2';
   return 'MR_GENERIC';
 }
 
@@ -101,13 +102,6 @@ export function computeAdaptiveMrWindow(
 
   if (maxVal - minVal < 1e-3) return { wc: minVal, ww: 1, seq, maxVal };
 
-  // STIR, T2 FS and PDFS: Full Stored Range is clinical gold standard to preserve fluids without blowout
-  if (seq === 'STIR' || seq === 'T2_FS' || seq === 'T1_FS' || seq === 'PDFS') {
-    const ww = Math.max(50, Math.round(maxVal));
-    const wc = Math.round(maxVal / 2);
-    return { wc, ww, seq, maxVal };
-  }
-
   // Filter background air floor (lowest 2.5% of dynamic range)
   const floor = minVal + 0.025 * (maxVal - minVal);
   const body = samples.filter((v) => v > floor);
@@ -118,9 +112,10 @@ export function computeAdaptiveMrWindow(
   const p2 = getPercentile(2.0);
   let winHi = getPercentile(93.0);
 
-  if (seq === 'T2') winHi = getPercentile(92.0);
-  else if (seq === 'T1') winHi = getPercentile(94.0);
-  else if (seq === 'FLAIR') winHi = getPercentile(93.5);
+  if (seq === 'STIR' || seq === 'T2_FS') winHi = getPercentile(92.5);
+  else if (seq === 'T2') winHi = getPercentile(92.0);
+  else if (seq === 'T1' || seq === 'T1_FS') winHi = getPercentile(94.0);
+  else if (seq === 'FLAIR' || seq === 'PDFS' || seq === 'PD') winHi = getPercentile(93.5);
   else if (seq === 'DWI') winHi = getPercentile(94.0);
   else if (seq === 'ADC') winHi = getPercentile(98.0);
   else if (seq === 'GRE') winHi = getPercentile(95.0);
@@ -186,9 +181,9 @@ export function getPresetsForSeries(
       id: 'mr_stir_fluid',
       name: 'STIR / Fluid Highlight',
       modality: 'MR',
-      wc: Math.round(max * 0.5),
-      ww: Math.max(50, Math.round(max)),
-      description: 'Full dynamic range preserving marrow edema and fluid without blowout',
+      wc: Math.round(baseWc * 1.05),
+      ww: Math.max(50, Math.round(baseWw * 1.15)),
+      description: 'Tissue-adaptive STIR contrast preserving bone marrow edema and fluid',
       badge: 'STIR',
     },
     {
@@ -208,6 +203,33 @@ export function getPresetsForSeries(
       ww: Math.max(50, Math.round(max * 0.40)),
       description: 'Restricted diffusion in acute cerebral ischemia',
       badge: 'DWI',
+    },
+    {
+      id: 'mr_adc',
+      name: 'ADC Diffusivity Map',
+      modality: 'MR',
+      wc: Math.round(max * 0.15),
+      ww: Math.max(50, Math.round(max * 0.30)),
+      description: 'Quantitative grayscale spread for ADC hypointensity confirmation',
+      badge: 'ADC',
+    },
+    {
+      id: 'mr_pdfs',
+      name: 'PDFS / Cartilage',
+      modality: 'MR',
+      wc: Math.round(max * 0.35),
+      ww: Math.max(50, Math.round(max * 0.65)),
+      description: 'Optimized joint chondral margin and tendon tear high-contrast depiction',
+      badge: 'PDFS',
+    },
+    {
+      id: 'mr_gre',
+      name: 'GRE / SWI Bleed & Mineral',
+      modality: 'MR',
+      wc: Math.round(baseWc * 0.75),
+      ww: Math.max(50, Math.round(baseWw * 0.70)),
+      description: 'Susceptibility effect enhancement for hemorrhage, hemosiderin, and calcium',
+      badge: 'GRE',
     },
     {
       id: 'mr_full_range',

@@ -138,6 +138,10 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
 
       for (const filePath of allFiles) {
         const meta = parseSliceHeader(filePath);
+        // Isolate study boundaries: drop slices from foreign studies
+        if (studyMeta.studyInstanceUid && meta.studyInstanceUid && meta.studyInstanceUid !== studyMeta.studyInstanceUid) {
+          continue;
+        }
         const groupKey = meta.seriesInstanceUid || meta.seriesNumber || '1';
 
         if (!seriesGroups.has(groupKey)) {
@@ -240,8 +244,7 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
 
       const caseId = dirName.replace(/[^a-zA-Z0-9_-]/g, '_');
       const age = studyMeta.age ? parseInt(studyMeta.age.replace(/\D/g, ''), 10) || 45 : 45;
-      const gender: 'Male' | 'Female' | 'Other' =
-        studyMeta.gender === 'F' ? 'Female' : studyMeta.gender === 'M' ? 'Male' : 'Other';
+      const gender: 'Male' | 'Female' | 'Other' = studyMeta.gender === 'F' ? 'Female' : studyMeta.gender === 'M' ? 'Male' : 'Other';
 
       results.push({
         id: caseId, patientName: studyMeta.patientName, patientId: studyMeta.patientId,
@@ -269,10 +272,7 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
     if (!existing) {
       seenMap.set(key, c);
       deduplicated.push(c);
-    } else if (
-      c.numInstances > existing.numInstances ||
-      (c.id.startsWith(c.accessionNumber) && !existing.id.startsWith(existing.accessionNumber))
-    ) {
+    } else if (c.numInstances > existing.numInstances || (c.id.startsWith(c.accessionNumber) && !existing.id.startsWith(existing.accessionNumber))) {
       const idx = deduplicated.indexOf(existing);
       if (idx !== -1) deduplicated[idx] = c;
       seenMap.set(key, c);

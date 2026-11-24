@@ -199,4 +199,11 @@ When working on specific features, refer to the authoritative documentation file
 - **TipTap as Canonical Workstation Editor**: Whenever text editing or rich content entry is implemented across Rad Suite (findings, techniques, impressions, clinical notes, report sections, macros, templates), ALWAYS use the canonical TipTap editor (`@/components/editor/tiptap-editor.tsx`).
 - **Minimal Field Exception**: Raw `<textarea>` or `<input>` is strictly reserved for very small, single-line, or minimal unformatted fields (e.g., patient name, MRN, phone number, simple search inputs). All multi-line clinical content, reporting areas, and template authoring tools MUST utilize TipTap with rich formatting, semantic headers, lists, and highlighting support.
 
+## 24. Brand Identity & Single-Source Icon Invariant
+- **Single Source of Truth**: The master emblem at `public/brand/radsuite-icon.svg` is the SOLE canonical source of truth for the brand mark across web, desktop, and mobile.
+- **Clinical Green Color Palette**: All brand marks must adhere strictly to Sage Mint (`#8ecf9e`) and Clinical Emerald (`#4a7c59`) on Obsidian Slate (`#101419` / `#252b35`) with white focal core (`#ffffff`). The legacy cyan/blue palette is permanently deprecated.
+- **Component & Metadata Direct Binding**: `<RadSuiteLogo />` must load `/brand/radsuite-icon.svg` directly; `src/app/layout.tsx` must register the generated `/favicon.ico`, `/favicon.svg`, `/favicon-96x96.png`, and `/site.webmanifest`.
+- **Zero Manual Asset Replacement**: When altering or replacing the logo mark, ALWAYS update `public/brand/radsuite-icon.svg` and execute `npm run generate:icons` to compile desktop ICO/ICNS/PNGs, Android mipmaps, web favicons, and synchronized build caches. Never perform manual one-off image replacements. Reference: [`docs/features/brand-identity-and-single-source-icons.md`](docs/features/brand-identity-and-single-source-icons.md).
+
+
 

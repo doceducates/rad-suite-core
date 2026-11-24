@@ -6,6 +6,8 @@ export interface DicomSliceHeaderMeta {
   file: string;
   seriesNumber: string;
   seriesInstanceUid: string;
+  studyInstanceUid?: string;
+  patientId?: string;
   seriesDescription?: string;
   instanceNumber: number;
   ipp?: [number, number, number];
@@ -90,6 +92,8 @@ export function parseSliceHeader(filePath: string): DicomSliceHeaderMeta {
 
   const sNum = ds.string('x00200011')?.trim();
   const sUid = ds.string('x0020000e')?.trim();
+  const stUid = ds.string('x0020000d')?.trim();
+  const pId = ds.string('x00100020')?.trim();
   const sDesc = ds.string('x0008103e')?.trim();
   const instNumStr = ds.string('x00200013')?.trim();
   const ippStr = ds.string('x00200032')?.trim();
@@ -100,6 +104,8 @@ export function parseSliceHeader(filePath: string): DicomSliceHeaderMeta {
 
   const seriesNumber = sNum || (sUid ? sUid : '1');
   const seriesInstanceUid = sUid || seriesNumber;
+  const studyInstanceUid = stUid || undefined;
+  const patientId = pId || undefined;
   const seriesDescription = sDesc || undefined;
   const instanceNumber = instNumStr ? parseInt(instNumStr, 10) : 0;
 
@@ -113,6 +119,8 @@ export function parseSliceHeader(filePath: string): DicomSliceHeaderMeta {
     file: filePath,
     seriesNumber,
     seriesInstanceUid,
+    studyInstanceUid,
+    patientId,
     seriesDescription,
     instanceNumber: isNaN(instanceNumber) ? 0 : instanceNumber,
     ipp: ipp && ipp.length === 3 ? ipp : undefined,

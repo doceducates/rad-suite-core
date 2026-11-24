@@ -1,34 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 84" width="380" height="84" fill="none">
   <defs>
-    <linearGradient id="logo-cyan-l" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#0369a1"/>
-    </linearGradient>
-    <linearGradient id="logo-teal-l" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0d9488"/>
-      <stop offset="100%" stop-color="#059669"/>
+    <linearGradient id="logo-green-l" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a7c59"/>
+      <stop offset="100%" stop-color="#3d694b"/>
     </linearGradient>
     <linearGradient id="logo-suite-l" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#0f766e"/>
+      <stop offset="0%" stop-color="#4a7c59"/>
+      <stop offset="100%" stop-color="#234832"/>
     </linearGradient>
   </defs>
 
   <!-- Left Icon Mark -->
   <g transform="translate(4, 6) scale(0.56)">
-    <rect x="4" y="4" width="120" height="120" rx="28" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/>
-    <circle cx="64" cy="64" r="48" stroke="url(#logo-cyan-l)" stroke-width="2" stroke-dasharray="8 6" stroke-opacity="0.5"/>
-    <circle cx="64" cy="64" r="38" stroke="url(#logo-teal-l)" stroke-width="2.5" stroke-opacity="0.5" stroke-dasharray="20 10 5 10"/>
-    <line x1="64" y1="18" x2="64" y2="28" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="64" y1="100" x2="64" y2="110" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="18" y1="64" x2="28" y2="64" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="100" y1="64" x2="110" y2="64" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="2" y="2" width="124" height="124" rx="28" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/>
+    <circle cx="64" cy="64" r="48" stroke="#4a7c59" stroke-width="2" stroke-dasharray="8 6" stroke-opacity="0.5"/>
+    <circle cx="64" cy="64" r="38" stroke="#234832" stroke-width="2.5" stroke-opacity="0.5" stroke-dasharray="20 10 5 10"/>
+    <line x1="64" y1="16" x2="64" y2="28" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="64" y1="100" x2="64" y2="112" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="16" y1="64" x2="28" y2="64" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="100" y1="64" x2="112" y2="64" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round"/>
     <g>
-      <path d="M44 38 C44 36.34 45.34 35 47 35 H52 C53.66 35 55 36.34 55 38 V90 C55 91.66 53.66 93 52 93 H47 C45.34 93 44 91.66 44 90 Z" fill="url(#logo-cyan-l)"/>
-      <path d="M52 35 H72 C81.94 35 90 42.16 90 51 C90 59.84 81.94 67 72 67 H54 V56 H71 C75.97 56 80 53.76 80 51 C80 48.24 75.97 46 71 46 H52 Z" fill="url(#logo-cyan-l)"/>
-      <path d="M68 64 L86.5 89.5 C87.6 91.0 86.8 93 84.8 93 H74.2 C73.1 93 72.1 92.4 71.4 91.5 L56 67 H69 Z" fill="url(#logo-teal-l)"/>
-      <circle cx="70" cy="51" r="5" fill="#0284c7"/>
-      <circle cx="70" cy="51" r="7.5" stroke="#0284c7" stroke-width="1.5" stroke-opacity="0.4"/>
+      <path d="M44 38 C44 36.3 45.3 35 47 35 H52 C53.7 35 55 36.3 55 38 V90 C55 91.7 53.7 93 52 93 H47 C45.3 93 44 91.7 44 90 Z" fill="#4a7c59"/>
+      <path d="M52 35 H72 C81.9 35 90 42.2 90 51 C90 59.8 81.9 67 72 67 H54 V56 H71 C76 56 80 53.8 80 51 C80 48.2 76 46 71 46 H52 Z" fill="#4a7c59"/>
+      <path d="M68 64 L86.5 89.5 C87.6 91 86.8 93 84.8 93 H74.2 C73.1 93 72.1 92.4 71.4 91.5 L56 67 H69 Z" fill="#234832"/>
+      <circle cx="70" cy="51" r="5" fill="#4a7c59"/>
+      <circle cx="70" cy="51" r="7.5" stroke="#4a7c59" stroke-width="1.5" stroke-opacity="0.4"/>
     </g>
   </g>
 
@@ -48,8 +44,8 @@
 
   <!-- Version / Status Pill -->
   <g transform="translate(268, 25)">
-    <rect width="48" height="18" rx="5" fill="#0284c7" fill-opacity="0.08" stroke="#0284c7" stroke-opacity="0.25" stroke-width="1"/>
-    <text x="24" y="12.5" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#0284c7" text-anchor="middle" letter-spacing="0.05em">
+    <rect width="48" height="18" rx="5" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-opacity="0.25" stroke-width="1"/>
+    <text x="24" y="12.5" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#4a7c59" text-anchor="middle" letter-spacing="0.05em">
       ALPHA
     </text>
   </g>

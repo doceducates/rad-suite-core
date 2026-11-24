@@ -38,8 +38,15 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: 'Hospital-grade radiology reporting, PACS imaging, voice dictation, and HMIS bridge.',
     icons: {
-      icon: '/favicon.ico',
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+        { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      ],
+      shortcut: '/favicon.ico',
+      apple: '/apple-touch-icon.png',
     },
+    manifest: '/site.webmanifest',
     openGraph: {
       title: 'Rad Suite — Advanced Radiology Reporting Workstation',
       description: 'Hospital-grade radiology reporting, PACS imaging, voice dictation, and HMIS bridge.',

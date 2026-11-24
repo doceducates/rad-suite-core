@@ -4,7 +4,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
 export type FindingsStyle = 'with_headings' | 'without_headings';
-export type ImpressionStyle = 'local_high_yield' | 'international_structured';
+export type ImpressionStyle =
+  | 'local_high_yield'
+  | 'international_structured'
+  | 'concise_bullets';
 
 export interface ReportingPreferences {
   findingsStyle: FindingsStyle;
@@ -34,8 +37,9 @@ export function getReportingPreferences(): ReportingPreferences {
       findingsStyle:
         parsed.findingsStyle === 'with_headings' ? 'with_headings' : 'without_headings',
       impressionStyle:
-        parsed.impressionStyle === 'international_structured'
-          ? 'international_structured'
+        parsed.impressionStyle === 'international_structured' ||
+        parsed.impressionStyle === 'concise_bullets'
+          ? parsed.impressionStyle
           : 'local_high_yield',
     };
   } catch {

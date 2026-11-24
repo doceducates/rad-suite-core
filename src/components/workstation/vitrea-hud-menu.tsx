@@ -6,11 +6,10 @@ import {
   SunMoon,
   Crosshair,
   Ruler,
-  Maximize2,
+  Hand,
   Circle,
   PenTool,
   Type,
-  ArrowUpRight,
   Camera,
   Undo2,
   Redo2,
@@ -21,6 +20,7 @@ import {
   Activity,
   X,
 } from 'lucide-react';
+import { AngleToolIcon, CobbAngleToolIcon } from './zen-dicom-tool-icons';
 import { cn } from '@/lib/utils';
 import type { DicomTool } from '@/components/dicom/dicom-toolbar';
 
@@ -40,15 +40,15 @@ export interface VitreaHudMenuProps {
 }
 
 const FIXED_TOOLS: { id: DicomTool; label: string; icon: any }[] = [
-  { id: 'pan', label: 'Pan', icon: Maximize2 },
+  { id: 'pan', label: 'Pan', icon: Hand },
   { id: 'wl', label: 'W/L', icon: SunMoon },
   { id: 'crosshair', label: 'Cross', icon: Crosshair },
   { id: 'length', label: 'Ruler', icon: Ruler },
-  { id: 'angle', label: 'Angle', icon: Maximize2 },
+  { id: 'angle', label: 'Angle', icon: AngleToolIcon },
+  { id: 'cobb', label: 'Cobb', icon: CobbAngleToolIcon },
   { id: 'roi', label: 'ROI', icon: Circle },
   { id: 'freehand', label: 'Free', icon: PenTool },
   { id: 'annotation', label: 'Text', icon: Type },
-  { id: 'arrow', label: 'Arrow', icon: ArrowUpRight },
   { id: 'snap', label: 'Snap', icon: Camera },
 ];
 
@@ -80,9 +80,14 @@ export function VitreaHudMenu({
     const menuH = 260;
     const screenW = typeof window !== 'undefined' ? window.innerWidth : 1024;
     const screenH = typeof window !== 'undefined' ? window.innerHeight : 768;
+    const isMobile = screenW < 640;
 
-    const clampedX = Math.max(8, Math.min(screenW - menuW - 8, position.x));
-    const clampedY = Math.max(8, Math.min(screenH - menuH - 8, position.y));
+    const clampedX = isMobile
+      ? Math.max(8, (screenW - menuW) / 2)
+      : Math.max(8, Math.min(screenW - menuW - 8, position.x));
+    const clampedY = isMobile
+      ? Math.max(8, (screenH - menuH) / 2)
+      : Math.max(8, Math.min(screenH - menuH - 8, position.y));
     setCoords({ x: clampedX, y: clampedY });
   }, [isOpen, position]);
 
@@ -135,6 +140,9 @@ export function VitreaHudMenu({
   const menu = (
     <div
       ref={menuRef}
+      onWheel={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
       className="fixed z-50 w-60 bg-zinc-950/95 border border-zinc-800 rounded-xl shadow-2xl p-2 select-none text-white text-xs animate-in fade-in zoom-in-95 duration-100"
       style={{
         left: `${coords.x}px`,

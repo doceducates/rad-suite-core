@@ -4,7 +4,7 @@
 import { callAICompletion, extractJsonFromModelResponse } from './ai-router.service';
 import { cleanHtmlText } from '@/lib/clinical-diff-engine';
 
-export type ImpressionFlavor = 'local_high_yield' | 'international_structured';
+export type ImpressionFlavor = 'local_high_yield' | 'international_structured' | 'concise_bullets';
 
 export interface GenerateImpressionParams {
   findings: string;
@@ -104,6 +104,13 @@ export function generateHeuristicImpression(
     return applyAgeVocabularyFilter(rawResult, age);
   }
 
+  if (flavor === 'concise_bullets') {
+    const rawResult = positiveLines.length > 0
+      ? `1. ${positiveLines[0].replace(/^[^:]+:\s*/, '').trim()}.`
+      : '1. Examination unremarkable within normal limits.';
+    return applyAgeVocabularyFilter(rawResult, age);
+  }
+
   // International Structured Format
   const bullets = positiveLines.slice(0, 4).map((line, idx) => {
     return `${idx + 1}. ${line.replace(/^[^:]+:\s*/, '')}`;
@@ -144,6 +151,11 @@ export async function generateTwoTierImpression(
 - Always highlight predominant levels ("more marked at...").
 - Suppress redundant millimeter measurements and normal findings.
 - If acute extrusion or fracture is present, append "Advise: Specialist consultation."`
+      : flavor === 'concise_bullets'
+      ? `FLAVOR: CONCISE BULLETS:
+- Provide 1 to 2 ultra-concise, high-impact numbered bullets.
+- Focus strictly on the primary positive/acute pathology.
+- Eliminate all anatomical baseline commentary.`
       : `FLAVOR: INTERNATIONAL / ACADEMIC STRUCTURED (ACR/RSNA Style):
 - Provide structured, formal ACR-compliant diagnostic impressions.
 - Specify exact canal stenosis grading (mild / moderate / severe) and neuroforaminal compromise.

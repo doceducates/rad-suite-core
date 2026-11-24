@@ -49,7 +49,7 @@ export function StitchGridOverlay({
       {/* Vitrea MMV Floating Pane Mini-Toolbar (Top Right) */}
       <div
         onClick={stopP}
-        className="absolute top-1.5 right-1.5 z-30 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-container-high/80 backdrop-blur-md border border-outline-variant/60 shadow-md select-none transition-opacity duration-150"
+        className="absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-container-high/80 backdrop-blur-md border border-outline-variant/60 shadow-md select-none transition-opacity duration-150"
       >
         {/* 1. Digital Subtraction Toggle */}
         {onToggleSubtraction && (
@@ -186,7 +186,7 @@ export function StitchGridOverlay({
 
       {/* Drag & Drop Target Glow Overlay */}
       {isDragOver && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-primary/20 backdrop-blur-xs border-2 border-primary rounded-xl pointer-events-none transition-all animate-pulse">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-primary/20 backdrop-blur-xs border-2 border-primary rounded-[3px] pointer-events-none transition-all animate-pulse">
           <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center border border-primary text-white mb-1.5 shadow-lg">
             <Download className="w-5 h-5 text-primary" />
           </div>
@@ -211,7 +211,7 @@ export function StitchMaximizedBadge({
   onRestore: () => void;
 }) {
   return (
-    <div className="absolute top-2.5 right-3 z-40 flex items-center gap-2">
+    <div className="absolute top-2.5 right-3 z-20 flex items-center gap-2">
       <button
         type="button"
         onClick={(e) => {

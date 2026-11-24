@@ -52,6 +52,18 @@ describe('two-tier-impression.service', () => {
     expect(impression).toContain('2.');
   });
 
+  it('generates concise bulleted impression format', () => {
+    const findings = `
+      L4-L5: Diffuse disc bulge with moderate central canal stenosis.
+      L5-S1: Neural exit foraminal stenosis.
+    `;
+    const impression = generateHeuristicImpression(findings, 50, 'concise_bullets');
+
+    expect(impression).toContain('1.');
+    const lines = impression.split('\n').filter(Boolean);
+    expect(lines.length).toBeLessThanOrEqual(3);
+  });
+
   it('returns unremarkable default for normal scans', async () => {
     const res = await generateTwoTierImpression({
       findings: 'L1-L2 to L5-S1 intervertebral disc spaces demonstrate preserved height without bulge.',

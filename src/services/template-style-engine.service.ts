@@ -2,7 +2,10 @@
 // Invariant: Target < 250 lines, max 350 lines.
 
 export type FindingsStyle = 'with_headings' | 'without_headings';
-export type ImpressionStyle = 'local_high_yield' | 'international_structured';
+export type ImpressionStyle =
+  | 'local_high_yield'
+  | 'international_structured'
+  | 'concise_bullets';
 export type ReportStyle = 'categorized_headings' | 'pure_bullets' | FindingsStyle;
 
 export interface StyleConversionResult {
@@ -126,6 +129,12 @@ export function formatImpressionForStyle(rawImpression: string, flavor: Impressi
     // Condense to primary diagnostic statements
     const topBullets = lines.slice(0, 2);
     return topBullets.map((l, i) => `${i + 1}. ${l.replace(/^\d+[\.\)]\s*/, '')}`).join('\n');
+  }
+
+  if (flavor === 'concise_bullets') {
+    // Concise Bullets: 1-3 crisp atomic bullets
+    const bulletList = lines.slice(0, 3);
+    return bulletList.map((l, i) => `${i + 1}. ${l.replace(/^\d+[\.\)]\s*/, '')}`).join('\n');
   }
 
   // Academic ACR / International structured: full itemized listing

@@ -165,6 +165,8 @@ export const LAYOUT_PRESETS: { mode: ViewportLayoutMode; label: string; desc: st
   { mode: '1x2', label: '1×2 Dual', desc: 'Side-by-side comparison', cols: 2, rows: 1 },
   { mode: '2x2', label: '2×2 Quad', desc: 'Orthogonal 4-pane MPR', cols: 2, rows: 2 },
   { mode: '1x3', label: '1×3 Triple', desc: 'Tri-plane linear view', cols: 3, rows: 1 },
+  { mode: '2x3', label: '2×3 6-View', desc: '2 rows × 3 columns overview', cols: 3, rows: 2 },
+  { mode: '4x1', label: '4×1 Column', desc: '4 vertical stacked series', cols: 1, rows: 4 },
   { mode: '3x3', label: '3×3 Montage', desc: '9-pane screening overview', cols: 3, rows: 3 },
   { mode: '4x4', label: '4×4 Matrix', desc: '16-pane deep montage', cols: 4, rows: 4 },
 ];

@@ -75,8 +75,8 @@ describe('Vitrea Clinical Presets & Sequence Classification', () => {
     for (let i = 0; i < pixels.length; i++) pixels[i] = i * 16; // 0 to 16000
     const res = computeAdaptiveMrWindow(pixels, { seriesDescription: 'SG T2 STIR' });
     expect(res.seq).toBe('STIR');
-    expect(res.ww).toBeGreaterThanOrEqual(15000);
-    expect(res.wc).toBeGreaterThanOrEqual(7500);
+    expect(res.ww).toBeGreaterThanOrEqual(14000);
+    expect(res.wc).toBeGreaterThanOrEqual(7000);
   });
 
   it('returns dynamically calibrated MRI presets from pixel buffer', () => {

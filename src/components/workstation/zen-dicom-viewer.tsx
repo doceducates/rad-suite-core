@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Layers } from 'lucide-react';
 import { useDicomViewport } from '@/hooks/use-dicom-viewport';
 import { useDicomSliceLoader } from '@/hooks/use-dicom-slice-loader';
 import { useDicomHuHover } from '@/hooks/use-dicom-hu-hover';
@@ -81,12 +82,15 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
 
   const demoStudy = getSyntheticStudyDetail(accessionNumber, modality);
   const isRealDcm = isLocalCase && localSeries.length > 0;
+  const isDemo = Boolean(accessionNumber?.startsWith('DEMO') || accessionNumber?.startsWith('TEST'));
   const currentSeries = isRealDcm
     ? localSeries[activeSeriesIndex] || localSeries[0]
     : demoStudy.series[activeSeriesIndex] || demoStudy.series[0];
   const maxSlices = isRealDcm
     ? (currentSeries as LocalSeriesMeta).sliceCount
     : (currentSeries as any)?.instances?.length || 32;
+
+  const openHudRef = useRef<(x: number, y: number) => void>(() => {});
 
   const {
     zoom, setZoom, pan, setPan, slice, setSlice, changeSliceByUser, ww, setWw, wc, setWc, isSpacePressed, resetViewport,
@@ -95,6 +99,7 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
   } = useDicomViewport({
     maxSlices, initialWw: 380, initialWc: 40, containerRef, onSliceChange,
     externalZoom, onZoomChange, externalPan, onPanChange,
+    onLongPress: (x, y) => openHudRef.current(x, y),
   });
 
   const { isHovered, handlePointerEnter, handlePointerLeave, startSmoothScroll, stopSmoothScroll } = usePaneArrowScroll({
@@ -117,9 +122,10 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
       onStepSlice: (d) => changeSliceByUser((s) => s + d),
       ww, wc, setWw, setWc, setPan, setZoom, isMobile,
     });
+  openHudRef.current = openHud;
 
   useDicomCanvasRenderer({
-    canvasRef, isRealDcm, parsedSlice, slice, maxSlices, modality, preset: activePresetId, zoom, pan, ww, wc, invert,
+    canvasRef, isRealDcm, isDemo, parsedSlice, slice, maxSlices, modality, preset: activePresetId, zoom, pan, ww, wc, invert,
     enabled: !glEnabled || !isRealDcm || !parsedSlice,
   });
 
@@ -207,6 +213,18 @@ export function ZenDicomViewer(props: ZenDicomViewerProps) {
           active3DPoint={active3DPoint} currentGeometry={currentGeometry}
           isCrosshairVisible={isCrosshairVisible} onClear3DPoint={onClear3DPoint}
         />
+
+        {!isRealDcm && !isDemo && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-muted-foreground p-6 text-center select-none z-10 pointer-events-none">
+            <div className="p-2.5 rounded-full bg-surface-container-high/60 border border-outline-variant/60 mb-2 text-muted-foreground">
+              <Layers className="w-5 h-5 opacity-60" />
+            </div>
+            <span className="text-xs font-semibold text-foreground mb-0.5">Awaiting DICOM Series</span>
+            <span className="text-[10px] text-muted-foreground/70 max-w-xs">
+              No local or PACS DICOM series loaded for accession {accessionNumber}.
+            </span>
+          </div>
+        )}
 
         {/* Floating Sequence Explorer Dock (screen-gated to mobile/compact screens) */}
         <div className="md:hidden">

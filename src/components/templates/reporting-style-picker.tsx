@@ -132,6 +132,22 @@ export function ReportingStylePicker({
               <span className="hidden sm:inline">Academic ACR</span>
               <span className="sm:hidden">ACR</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectImpression('concise_bullets')}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer',
+                impressionStyle === 'concise_bullets'
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-secondary hover:text-on-surface hover:bg-surface-container-high'
+              )}
+              title="Concise Bullets: High-impact atomic bullets focusing strictly on positive findings"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span className="hidden sm:inline">Concise Bullets</span>
+              <span className="sm:hidden">Bullets</span>
+            </button>
           </div>
         </div>
       )}

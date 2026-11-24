@@ -8,12 +8,14 @@ import { ZenSectionResizer } from './zen-section-resizer';
 import { ZenSectionHeader } from './zen-section-header';
 import { CompanionTab } from '@/hooks/use-companion-panel';
 import { HmisNormalTemplate } from '@/types/templates';
-import { Sparkles, Loader2, Zap, Globe } from 'lucide-react';
+import { Sparkles, Loader2, Pencil } from 'lucide-react';
 import { notify } from '@/services/notification.service';
 import { ImpressionFlavor } from '@/services/two-tier-impression.service';
 import { buildFindingsWithTechnique } from '@/lib/clinical-format';
-import { ReportingStylePicker } from '@/components/templates/reporting-style-picker';
-import { convertFindingsBetweenStyles } from '@/services/template-style-engine.service';
+import {
+  ImpressionStyleCycler,
+  AVAILABLE_IMPRESSION_STYLES,
+} from './impression-style-cycler';
 
 interface ZenSectionsEditorViewProps {
   report: ReportEditorState;
@@ -48,15 +50,15 @@ export function ZenSectionsEditorView({
   patientContext: patientContextOverride,
 }: ZenSectionsEditorViewProps) {
   const [flavor, setFlavor] = useState<ImpressionFlavor>('local_high_yield');
+  const [impressionCache, setImpressionCache] = useState<Record<string, string>>({});
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
 
-  const handleGenerateImpression = async () => {
+  const fetchAndApplyImpression = async (targetFlavor: ImpressionFlavor) => {
     const cleanFindings = (report.findings || '').replace(/<[^>]*>/g, '').trim();
     if (!cleanFindings) {
-      notify.warning('Please document or dictate findings before synthesizing an impression.');
+      notify.warning('Please document findings before synthesizing an impression.');
       return;
     }
-
     setIsGeneratingImpression(true);
     try {
       const res = await fetch('/api/ai/impression-tier', {
@@ -65,31 +67,52 @@ export function ZenSectionsEditorView({
         body: JSON.stringify({
           findings: report.findings,
           modality,
-          flavor,
+          flavor: targetFlavor,
           patientAge: patientAge || patientContextOverride?.patientAge,
         }),
       });
-
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed generating impression');
-      }
-
-      setReport((prev) => ({
-        ...prev,
-        impression: data.impressionHtml || data.impressionText,
-      }));
-
-      notify.success(
-        flavor === 'local_high_yield'
-          ? 'Generated Local High-Yield Impression'
-          : 'Generated Academic ACR Structured Impression'
-      );
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed generating impression');
+      const newImp = data.impressionHtml || data.impressionText;
+      setImpressionCache((prev) => ({ ...prev, [targetFlavor]: newImp }));
+      setReport((prev) => ({ ...prev, impression: newImp }));
+      const activeOption = AVAILABLE_IMPRESSION_STYLES.find((s) => s.id === targetFlavor);
+      notify.success(`Generated ${activeOption?.shortLabel || 'Impression'}`);
     } catch (err: any) {
       notify.error(err.message || 'Could not synthesize impression');
     } finally {
       setIsGeneratingImpression(false);
     }
+  };
+
+  const handleGenerateImpression = () => fetchAndApplyImpression(flavor);
+
+  const handleCycleFlavor = (direction: 'next' | 'prev') => {
+    const currentIdx = Math.max(0, AVAILABLE_IMPRESSION_STYLES.findIndex((s) => s.id === flavor));
+    const nextIdx =
+      direction === 'next'
+        ? (currentIdx + 1) % AVAILABLE_IMPRESSION_STYLES.length
+        : (currentIdx - 1 + AVAILABLE_IMPRESSION_STYLES.length) % AVAILABLE_IMPRESSION_STYLES.length;
+    const target = AVAILABLE_IMPRESSION_STYLES[nextIdx];
+    setFlavor(target.id);
+
+    if (impressionCache[target.id]) {
+      setReport((prev) => ({ ...prev, impression: impressionCache[target.id] }));
+      notify.info(`Switched to ${target.shortLabel}`);
+      return;
+    }
+    fetchAndApplyImpression(target.id);
+  };
+
+  const handleEditImpression = () => {
+    if (isImpressionCollapsed) {
+      toggleImpressionCollapse();
+    }
+    const el = document.querySelector(
+      '#sections-impression-container .ProseMirror, [data-editor-section="impression"] .ProseMirror'
+    ) as HTMLElement;
+    if (el) el.focus();
+    notify.info('Editing Impression in Clinical Editor');
   };
 
   const {
@@ -177,24 +200,6 @@ export function ZenSectionsEditorView({
           copyContent={findingsWithTechnique}
           richHtml={true}
           copyTitle="Copy Findings (with Technique) to Clipboard"
-          actions={
-            !readOnly && (
-              <div className="flex items-center gap-1.5 ml-2" onClick={(e) => e.stopPropagation()}>
-                <ReportingStylePicker
-                  mode="findings_only"
-                  compact
-                  onStyleChange={(newStyle) => {
-                    if (report.findings && report.findings.trim() !== '') {
-                      const converted = convertFindingsBetweenStyles(report.findings, newStyle);
-                      if (converted !== report.findings) {
-                        setReport((prev) => ({ ...prev, findings: converted }));
-                      }
-                    }
-                  }}
-                />
-              </div>
-            )
-          }
           badge={
             report.criticalFinding ? (
               <span className="font-mono text-[10px] text-error font-bold flex items-center gap-1">
@@ -251,16 +256,25 @@ export function ZenSectionsEditorView({
           actions={
             !readOnly && (
               <div className="flex items-center gap-1.5 ml-2" onClick={(e) => e.stopPropagation()}>
-                <ReportingStylePicker
-                  mode="impression_only"
-                  compact
-                  onStyleChange={(_, flv) => setFlavor(flv)}
+                <ImpressionStyleCycler
+                  currentStyle={flavor}
+                  onCycle={handleCycleFlavor}
+                  loading={isGeneratingImpression}
                 />
+                <button
+                  type="button"
+                  onClick={handleEditImpression}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold text-secondary hover:text-primary hover:bg-surface-container border border-outline-variant/30 transition-all cursor-pointer"
+                  title="Edit impression in Clinical Editor"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleGenerateImpression}
                   disabled={isGeneratingImpression}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all disabled:opacity-50"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all disabled:opacity-50 cursor-pointer"
                   title="Synthesize structured impression from current findings without hallucination"
                 >
                   {isGeneratingImpression ? (
@@ -275,7 +289,7 @@ export function ZenSectionsEditorView({
           }
         />
         {!isImpressionCollapsed && (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0" id="sections-impression-container">
             <ClinicalEditor
               key={`impression-${studyId}-${templateRev}`}
               content={report.impression}
