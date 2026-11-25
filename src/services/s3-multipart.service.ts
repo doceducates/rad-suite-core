@@ -6,12 +6,30 @@ import {
   type S3HttpResponse,
 } from './s3-client';
 
-const DEFAULT_PART_SIZE = 15 * 1024 * 1024; // 15MB: safely under 20MB TG Bot API & 100MB Cloudflare limit
-const MULTIPART_THRESHOLD = 18 * 1024 * 1024; // Switch to S3 Multipart above 18MB
+const DEFAULT_PART_SIZE = 50 * 1024 * 1024; // 50MB: above 20MB Bot API threshold (routes via VPS proxy) & below 100MB CF limit
+const MULTIPART_THRESHOLD = 80 * 1024 * 1024; // Single PUT up to 80MB (safely under 100MB Cloudflare limit); Multipart above
+
+function getRetryDelayMs(res: S3HttpResponse, attempt: number): number {
+  const rawHeader = res.headers?.['retry-after'];
+  const raw = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+  const sec = raw ? parseInt(raw, 10) : NaN;
+  if (!isNaN(sec) && sec > 0) {
+    return Math.min(60000, Math.max(5000, sec * 1000));
+  }
+  return Math.min(60000, (attempt + 1) * 10000);
+}
+
+async function abortMultipartBestEffort(creds: S3Credentials, keyPath: string, uploadId: string): Promise<void> {
+  try {
+    const abortUrl = buildS3Url(creds, keyPath, { uploadId });
+    const abortHeaders = getSigV4Headers('DELETE', abortUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, '');
+    await s3HttpRequest('DELETE', abortUrl, abortHeaders, '', 15000);
+  } catch {}
+}
 
 /**
- * Uploads an object via single PUT (<=18MB) or S3 Multipart Upload (>18MB) in 15MB parts,
- * avoiding Cloudflare's 100MB body limit and respecting Telegram rate limits.
+ * Uploads an object via single PUT (<=80MB) or S3 Multipart Upload (>80MB) in 50MB parts,
+ * avoiding Cloudflare's 100MB body limit and the 20MB Worker rate-limited direct Bot API path.
  */
 export async function uploadBufferSmartToS3(
   creds: S3Credentials,
@@ -24,7 +42,7 @@ export async function uploadBufferSmartToS3(
     const headers = getSigV4Headers('PUT', putUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, buffer, {
       'content-type': contentType,
     });
-    return s3HttpRequest('PUT', putUrl, headers, buffer, 120000);
+    return s3HttpRequest('PUT', putUrl, headers, buffer, 180000);
   }
 
   // 1. Initiate Multipart Upload
@@ -57,21 +75,26 @@ export async function uploadBufferSmartToS3(
       const partUrl = buildS3Url(creds, keyPath, { partNumber: String(partNumber), uploadId });
 
       let partRes: S3HttpResponse | null = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 4; attempt++) {
         const partHeaders = getSigV4Headers('PUT', partUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, chunk, {
           'content-type': 'application/octet-stream',
         });
-        partRes = await s3HttpRequest('PUT', partUrl, partHeaders, chunk, 120000);
+        partRes = await s3HttpRequest('PUT', partUrl, partHeaders, chunk, 180000);
         if (partRes.ok) break;
         if (partRes.status === 429 || partRes.status === 503) {
-          if (attempt === 2) return partRes;
-          await new Promise((r) => setTimeout(r, (attempt + 1) * 8000));
+          if (attempt === 3) {
+            await abortMultipartBestEffort(creds, keyPath, uploadId);
+            return partRes;
+          }
+          await new Promise((r) => setTimeout(r, getRetryDelayMs(partRes!, attempt)));
           continue;
         }
+        await abortMultipartBestEffort(creds, keyPath, uploadId);
         return partRes;
       }
 
       if (!partRes || !partRes.ok) {
+        await abortMultipartBestEffort(creds, keyPath, uploadId);
         return partRes!;
       }
 
@@ -81,7 +104,7 @@ export async function uploadBufferSmartToS3(
 
       // Polite pause between parts to respect Telegram S3 rate limits
       if (partNumber < totalParts) {
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 2000));
       }
     }
 
@@ -94,14 +117,13 @@ export async function uploadBufferSmartToS3(
     const completeHeaders = getSigV4Headers('POST', completeUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, completeXml, {
       'content-type': 'application/xml',
     });
-    return await s3HttpRequest('POST', completeUrl, completeHeaders, completeXml, 300000);
+    const completeRes = await s3HttpRequest('POST', completeUrl, completeHeaders, completeXml, 600000);
+    if (!completeRes.ok) {
+      await abortMultipartBestEffort(creds, keyPath, uploadId);
+    }
+    return completeRes;
   } catch (err) {
-    // Best-effort abort on unhandled exception
-    try {
-      const abortUrl = buildS3Url(creds, keyPath, { uploadId });
-      const abortHeaders = getSigV4Headers('DELETE', abortUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, '');
-      await s3HttpRequest('DELETE', abortUrl, abortHeaders, '', 15000);
-    } catch {}
+    await abortMultipartBestEffort(creds, keyPath, uploadId);
     throw err;
   }
 }
