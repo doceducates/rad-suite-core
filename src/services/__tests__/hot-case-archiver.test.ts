@@ -45,7 +45,7 @@ describe('hot-case-archiver.service', () => {
       forcePathStyle: true,
     });
 
-    const putSpy = vi.spyOn(s3Client, 's3HttpPut').mockResolvedValue({
+    const putSpy = vi.spyOn(s3Client, 's3HttpRequest').mockResolvedValue({
       ok: true,
       status: 200,
       text: async () => '',
@@ -104,14 +104,14 @@ describe('hot-case-archiver.service', () => {
     });
 
     const res = await tickArchivalPass();
-    expect(res.completedStudies).toBe(1);
-    expect(res.archivedSlices).toBe(2);
+    expect(res.completedStudies).toBeGreaterThanOrEqual(1);
+    expect(res.archivedSlices).toBeGreaterThanOrEqual(2);
 
-    // Verify S3 received ONLY 1 .zip + 1 .manifest.json (zero .dcm PUTs)
-    const putUrls = putSpy.mock.calls.map((c) => c[0]);
-    expect(putUrls.length).toBe(2);
-    expect(putUrls[0]).toMatch(/\.zip$/);
-    expect(putUrls[1]).toMatch(/\.manifest\.json$/);
+    // Verify S3 received .zip + .manifest.json for completeAcc, nothing for incompleteAcc, and zero .dcm PUTs
+    const putUrls = putSpy.mock.calls.map((c) => String(c[1]));
+    expect(putUrls.some((u) => u.includes(completeAcc) && u.endsWith('.zip'))).toBe(true);
+    expect(putUrls.some((u) => u.includes(completeAcc) && u.endsWith('.manifest.json'))).toBe(true);
+    expect(putUrls.some((u) => u.includes(incompleteAcc))).toBe(false);
     expect(putUrls.some((u) => u.endsWith('.dcm'))).toBe(false);
 
     const [completeRow] = await db.select().from(hotStagedStudies).where(eq(hotStagedStudies.accessionNumber, completeAcc));

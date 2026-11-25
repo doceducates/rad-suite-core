@@ -7,7 +7,8 @@ import { db } from '@/db';
 import { hotStagedStudies } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { HOT_CASES_DIR, enforceHotStorageQuota } from './hot-case-staging.service';
-import { getEffectiveS3Credentials, buildS3Url, getSigV4Headers, s3HttpPut } from './s3-client';
+import { getEffectiveS3Credentials, buildS3Url, getSigV4Headers, s3HttpRequest } from './s3-client';
+import { uploadBufferSmartToS3 } from './s3-multipart.service';
 import { getUserStorageTarget } from './case-storage-router.service';
 import { uploadStudyToUserGoogleDrive } from './gdrive-study-upload.service';
 
@@ -202,20 +203,8 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
         const zipBuf = await createStudyZipBuffer(caseFolder);
         if (!zipBuf || zipBuf.length === 0) continue;
 
-        // 2. Upload Single Study ZIP in 1 PUT request (dynamic timeout up to 15 min for large MRI ZIPs)
-        const putUrl = buildS3Url(creds, s3ZipKey);
-        const putTimeoutMs = Math.max(120000, Math.min(900000, Math.ceil(zipBuf.length / 20000) * 1000));
-        const headers = getSigV4Headers(
-          'PUT',
-          putUrl,
-          creds.region,
-          creds.accessKeyId,
-          creds.secretAccessKey,
-          zipBuf,
-          { 'content-type': 'application/zip' }
-        );
-
-        const res = await s3HttpPut(putUrl, headers, zipBuf, putTimeoutMs);
+        // 2. Upload Single Study ZIP (single PUT <=18MB or S3 Multipart in 15MB parts >18MB)
+        const res = await uploadBufferSmartToS3(creds, s3ZipKey, zipBuf, 'application/zip');
 
         if (res.ok) {
           consecutiveRateLimits = 0;
@@ -250,7 +239,7 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
             manifestBuf,
             { 'content-type': 'application/json' }
           );
-          await s3HttpPut(manUrl, manHeaders, manifestBuf, 15000).catch(() => {});
+          await s3HttpRequest('PUT', manUrl, manHeaders, manifestBuf, 15000).catch(() => {});
 
           // 4. Mark study as synced to S3 in local DB
           const nowIso = new Date().toISOString();

@@ -72,25 +72,26 @@ export function s3HttpGet(
   });
 }
 
-export function s3HttpPut(
+export function s3HttpRequest(
+  method: 'GET' | 'PUT' | 'POST' | 'DELETE',
   urlStr: string,
   headers: Record<string, string>,
-  body: Buffer,
+  body?: Buffer | string,
   timeoutMs = 25000
 ): Promise<S3HttpResponse> {
   return new Promise((resolve, reject) => {
     const isHttps = urlStr.startsWith('https:');
     const client = isHttps ? https : http;
     const agent = isHttps ? httpsKeepAliveAgent : httpKeepAliveAgent;
+    const bodyBuf = body === undefined ? undefined : (Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8'));
 
     const req = client.request(
       urlStr,
       {
-        method: 'PUT',
-        headers: {
-          ...headers,
-          'content-length': body.length.toString(),
-        },
+        method,
+        headers: bodyBuf
+          ? { ...headers, 'content-length': bodyBuf.length.toString() }
+          : headers,
         agent,
         timeout: timeoutMs,
       },
@@ -115,9 +116,18 @@ export function s3HttpPut(
       req.destroy(new Error('ETIMEDOUT'));
     });
     req.on('error', reject);
-    req.write(body);
+    if (bodyBuf) req.write(bodyBuf);
     req.end();
   });
+}
+
+export function s3HttpPut(
+  urlStr: string,
+  headers: Record<string, string>,
+  body: Buffer,
+  timeoutMs = 25000
+): Promise<S3HttpResponse> {
+  return s3HttpRequest('PUT', urlStr, headers, body, timeoutMs);
 }
 
 function hmac(key: string | Buffer, string: string): Buffer {
