@@ -92,7 +92,8 @@ export async function uploadBufferSmartToS3(
           console.log(`[MULTIPART] Part ${partNumber}/${totalParts} (${(chunk.length / 1048576).toFixed(1)} MB) uploaded in ${Date.now() - t0}ms`);
           break;
         }
-        if (partRes.status === 429 || partRes.status === 503) {
+        if (partRes.status === 429 || partRes.status >= 500) {
+          console.warn(`[MULTIPART] Part ${partNumber}/${totalParts} returned HTTP ${partRes.status}, retrying attempt ${attempt + 1}/4...`);
           if (attempt === 3) {
             await abortMultipartBestEffort(creds, keyPath, uploadId);
             return partRes;
@@ -109,9 +110,9 @@ export async function uploadBufferSmartToS3(
         return partRes!;
       }
 
-      // Polite pause between parts to respect Telegram S3 rate limits
+      // Polite pause between parts to respect Telegram S3 and tunnel rate limits
       if (partNumber < totalParts) {
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 3500));
       }
     }
 
@@ -126,13 +127,24 @@ export async function uploadBufferSmartToS3(
       'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
     }, true);
     console.log(`[MULTIPART] Completing upload for ${keyPath} (${completedParts.length} parts)...`);
-    const completeRes = await s3HttpRequest('POST', completeUrl, completeHeaders, completeXml, 600000);
-    if (!completeRes.ok) {
-      await abortMultipartBestEffort(creds, keyPath, uploadId);
-    } else {
-      console.log(`[MULTIPART] CompleteMultipartUpload succeeded for ${keyPath}`);
+    let completeRes: S3HttpResponse | null = null;
+    for (let cAttempt = 0; cAttempt < 3; cAttempt++) {
+      completeRes = await s3HttpRequest('POST', completeUrl, completeHeaders, completeXml, 600000);
+      if (completeRes.ok) {
+        console.log(`[MULTIPART] CompleteMultipartUpload succeeded for ${keyPath}`);
+        return completeRes;
+      }
+      if (completeRes.status === 429 || completeRes.status >= 500) {
+        console.warn(`[MULTIPART] Complete returned HTTP ${completeRes.status}, retrying attempt ${cAttempt + 1}/3...`);
+        if (cAttempt < 2) {
+          await new Promise((r) => setTimeout(r, 5000 * (cAttempt + 1)));
+          continue;
+        }
+      }
+      break;
     }
-    return completeRes;
+    await abortMultipartBestEffort(creds, keyPath, uploadId);
+    return completeRes!;
   } catch (err) {
     await abortMultipartBestEffort(creds, keyPath, uploadId);
     throw err;
