@@ -241,15 +241,19 @@ export async function calculateHotStorageBytes(): Promise<number> {
   if (!fs.existsSync(HOT_CASES_DIR)) return 0;
   let total = 0;
   const walk = async (dir: string) => {
-    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile()) {
-        const st = await fs.promises.stat(full);
-        total += st.size;
+    try {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) await walk(full);
+        else if (entry.isFile()) {
+          try {
+            const st = await fs.promises.stat(full);
+            total += st.size;
+          } catch {}
+        }
       }
-    }
+    } catch {}
   };
   await walk(HOT_CASES_DIR);
   return total;

@@ -12,12 +12,20 @@ import { getUserStorageTarget } from './case-storage-router.service';
 import { uploadStudyToUserGoogleDrive } from './gdrive-study-upload.service';
 
 let isArchiverRunning = false;
+let rateLimitCooldownUntil = 0;
+let consecutiveRateLimits = 0;
+
+const MAX_STUDIES_PER_PASS = 2;
+const INTER_STUDY_DELAY_MS = 2500;
+const COMPLETE_SETTLE_MS = 15000;
+const INCOMPLETE_SETTLE_MS = 10 * 60 * 1000;
 
 interface ArchivalStats {
   studiesArchived: number;
   slicesArchived: number;
   lastRunAt: string | null;
   lastError: string | null;
+  cooldownUntil?: string | null;
 }
 
 const stats: ArchivalStats = {
@@ -25,10 +33,20 @@ const stats: ArchivalStats = {
   slicesArchived: 0,
   lastRunAt: null,
   lastError: null,
+  cooldownUntil: null,
 };
 
 export function getArchivalStats(): ArchivalStats {
   return { ...stats };
+}
+
+function parseRetryAfterMs(retryHeader: string | string[] | undefined, attempt: number): number {
+  const raw = Array.isArray(retryHeader) ? retryHeader[0] : retryHeader;
+  const parsedSec = raw ? parseInt(raw, 10) : NaN;
+  if (!isNaN(parsedSec) && parsedSec > 0) {
+    return Math.min(300000, Math.max(5000, parsedSec * 1000));
+  }
+  return Math.min(300000, 30000 * Math.pow(2, Math.max(0, attempt - 1)));
 }
 
 /**
@@ -68,6 +86,9 @@ export async function createStudyZipBuffer(caseFolder: string): Promise<Buffer> 
  */
 export async function tickArchivalPass(): Promise<{ archivedSlices: number; completedStudies: number }> {
   if (isArchiverRunning) return { archivedSlices: 0, completedStudies: 0 };
+  if (Date.now() < rateLimitCooldownUntil) {
+    return { archivedSlices: 0, completedStudies: 0 };
+  }
   isArchiverRunning = true;
   stats.lastRunAt = new Date().toISOString();
 
@@ -77,15 +98,17 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
   try {
     const creds = getEffectiveS3Credentials();
 
-    // Prioritize Today's cases first (studyDate DESC)
+    // Prioritize Today's cases first (studyDate DESC); query broad pool so missing/incomplete folders don't starve queue
     const pendingStudies = await db
       .select()
       .from(hotStagedStudies)
       .where(eq(hotStagedStudies.isSyncedToS3, false))
       .orderBy(desc(hotStagedStudies.studyDate), desc(hotStagedStudies.createdAt))
-      .limit(3);
+      .limit(30);
 
     for (const study of pendingStudies) {
+      if (totalStudiesCompleted >= MAX_STUDIES_PER_PASS) break;
+
       const caseFolder = path.join(HOT_CASES_DIR, study.accessionNumber);
       if (!fs.existsSync(caseFolder)) continue;
 
@@ -98,6 +121,15 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
       }
 
       if (studySlicesCount === 0) continue;
+
+      // Completeness & settle gate: wait for all slices or an idle settle window before archiving Study ZIP
+      const lastStagedMs = study.lastSliceStagedAt ? new Date(study.lastSliceStagedAt).getTime() : 0;
+      const ageSinceLastSliceMs = lastStagedMs > 0 ? Date.now() - lastStagedMs : Infinity;
+      const isComplete = (study.totalSlices || 0) > 0 && studySlicesCount >= (study.totalSlices || 0);
+      const isSettled = isComplete
+        ? ageSinceLastSliceMs >= COMPLETE_SETTLE_MS
+        : ageSinceLastSliceMs >= INCOMPLETE_SETTLE_MS;
+      if (!isSettled) continue;
 
       const year = (study.studyDate || '2026').slice(0, 4);
       const month = (study.studyDate || '202610').slice(4, 6);
@@ -122,6 +154,17 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
             });
 
             if (gdriveRes.success) {
+              const nowIso = new Date().toISOString();
+              await db
+                .update(hotStagedStudies)
+                .set({
+                  isSyncedToS3: true,
+                  s3SyncedSliceCount: studySlicesCount,
+                  s3CompletedAt: nowIso,
+                  updatedAt: nowIso,
+                })
+                .where(eq(hotStagedStudies.accessionNumber, study.accessionNumber));
+
               totalStudiesCompleted++;
               totalSlicesArchived += studySlicesCount;
               stats.studiesArchived++;
@@ -139,14 +182,15 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
           } catch (gdErr: any) {
             stats.lastError = gdErr?.message || 'Google Drive archival exception';
           }
-          await new Promise((r) => setTimeout(r, 1000));
+          await new Promise((r) => setTimeout(r, INTER_STUDY_DELAY_MS));
           continue;
         }
       }
 
-      // Route B: Admin cases archive to Admin Telegram S3
-      if (!creds.enabled || !creds.bucket) {
-        continue;
+      // Route B: Admin cases archive to Admin Telegram S3 as a single consolidated Study ZIP
+      if (!creds.enabled || !creds.bucket || !creds.accessKeyId || !creds.secretAccessKey) {
+        stats.lastError = 'VPS S3 credentials not configured; Study ZIP archival skipped';
+        break;
       }
 
       // S3 Keys: 1 Single Study ZIP + 1 lightweight manifest
@@ -156,9 +200,11 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
       try {
         // 1. Compile Study ZIP
         const zipBuf = await createStudyZipBuffer(caseFolder);
+        if (!zipBuf || zipBuf.length === 0) continue;
 
-        // 2. Upload Single Study ZIP in 1 PUT request
+        // 2. Upload Single Study ZIP in 1 PUT request (dynamic timeout up to 15 min for large MRI ZIPs)
         const putUrl = buildS3Url(creds, s3ZipKey);
+        const putTimeoutMs = Math.max(120000, Math.min(900000, Math.ceil(zipBuf.length / 20000) * 1000));
         const headers = getSigV4Headers(
           'PUT',
           putUrl,
@@ -169,9 +215,14 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
           { 'content-type': 'application/zip' }
         );
 
-        const res = await s3HttpPut(putUrl, headers, zipBuf, 120000);
+        const res = await s3HttpPut(putUrl, headers, zipBuf, putTimeoutMs);
 
         if (res.ok) {
+          consecutiveRateLimits = 0;
+          rateLimitCooldownUntil = 0;
+          stats.cooldownUntil = null;
+          stats.lastError = null;
+
           // 3. Upload tiny companion manifest
           const manifest = {
             accessionNumber: acc,
@@ -185,6 +236,7 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
             totalSlices: studySlicesCount,
             seriesCount: seriesDirs.length,
             zipKey: s3ZipKey,
+            zipBytes: zipBuf.length,
             archivedAt: new Date().toISOString(),
           };
           const manifestBuf = Buffer.from(JSON.stringify(manifest, null, 2), 'utf8');
@@ -216,21 +268,38 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
           totalSlicesArchived += studySlicesCount;
           stats.studiesArchived++;
           stats.slicesArchived += studySlicesCount;
+          console.log(`[ARCHIVER] Archived Study ZIP ${s3ZipKey} (${(zipBuf.length / 1048576).toFixed(1)} MB, ${studySlicesCount} slices)`);
 
           // 5. Enforce 10GB disk quota after each study archival
           await enforceHotStorageQuota().catch(() => {});
         } else if (res.status === 429 || res.status === 503) {
-          stats.lastError = `Telegram S3 Rate Limit (${res.status}): Backing off`;
-          await new Promise((r) => setTimeout(r, 6000));
+          consecutiveRateLimits++;
+          const cooldownMs = parseRetryAfterMs(res.headers?.['retry-after'], consecutiveRateLimits);
+          rateLimitCooldownUntil = Date.now() + cooldownMs;
+          stats.cooldownUntil = new Date(rateLimitCooldownUntil).toISOString();
+          stats.lastError = `Telegram S3 Rate Limit (${res.status}): Backing off ${Math.round(cooldownMs / 1000)}s`;
+          console.warn(`[ARCHIVER] ${stats.lastError}`);
+          break;
         } else {
-          stats.lastError = `S3 PUT failed with status ${res.status}`;
+          const errSnippet = (await res.text().catch(() => '')).slice(0, 180);
+          stats.lastError = `S3 PUT ${acc} failed (${res.status}): ${errSnippet}`;
+          console.warn(`[ARCHIVER] ${stats.lastError}`);
         }
       } catch (e: any) {
-        stats.lastError = e?.message || 'S3 upload error';
+        const msg = e?.message || 'S3 upload error';
+        stats.lastError = `${acc}: ${msg}`;
+        console.warn(`[ARCHIVER_ERR] ${acc}:`, msg);
+        if (/429|503|SlowDown|Too Many Requests/i.test(msg)) {
+          consecutiveRateLimits++;
+          const cooldownMs = parseRetryAfterMs(undefined, consecutiveRateLimits);
+          rateLimitCooldownUntil = Date.now() + cooldownMs;
+          stats.cooldownUntil = new Date(rateLimitCooldownUntil).toISOString();
+          break;
+        }
       }
 
-      // Polite inter-study pacing
-      await new Promise((r) => setTimeout(r, 1000));
+      // Polite inter-study pacing to respect Telegram S3 rate limits
+      await new Promise((r) => setTimeout(r, INTER_STUDY_DELAY_MS));
     }
   } catch (err: any) {
     stats.lastError = err?.message || 'Archival loop error';

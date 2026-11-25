@@ -34,6 +34,7 @@ const httpKeepAliveAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 export interface S3HttpResponse {
   ok: boolean;
   status: number;
+  headers?: Record<string, string | string[] | undefined>;
   text: () => Promise<string>;
   arrayBuffer: () => Promise<Buffer>;
 }
@@ -57,6 +58,7 @@ export function s3HttpGet(
         resolve({
           ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
           status: res.statusCode || 0,
+          headers: res.headers,
           text: async () => fullBuf.toString('utf8'),
           arrayBuffer: async () => fullBuf,
         });
@@ -101,6 +103,7 @@ export function s3HttpPut(
           resolve({
             ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
             status: res.statusCode || 0,
+            headers: res.headers,
             text: async () => fullBuf.toString('utf8'),
             arrayBuffer: async () => fullBuf,
           });
