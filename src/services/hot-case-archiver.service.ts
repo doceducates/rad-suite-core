@@ -203,7 +203,9 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
         const zipBuf = await createStudyZipBuffer(caseFolder);
         if (!zipBuf || zipBuf.length === 0) continue;
 
-        // 2. Upload Single Study ZIP (single PUT <=18MB or S3 Multipart in 15MB parts >18MB)
+        console.log(`[ARCHIVER] Uploading Study ZIP ${acc} (${pat}, ${(zipBuf.length / 1048576).toFixed(1)} MB, ${studySlicesCount} slices)...`);
+
+        // 2. Upload Single Study ZIP (single PUT <=80MB or S3 Multipart in 50MB parts >80MB)
         const res = await uploadBufferSmartToS3(creds, s3ZipKey, zipBuf, 'application/zip');
 
         if (res.ok) {
@@ -228,29 +230,18 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
             zipBytes: zipBuf.length,
             archivedAt: new Date().toISOString(),
           };
-          const manifestBuf = Buffer.from(JSON.stringify(manifest, null, 2), 'utf8');
+          const manBuf = Buffer.from(JSON.stringify(manifest, null, 2), 'utf8');
           const manUrl = buildS3Url(creds, s3ManifestKey);
-          const manHeaders = getSigV4Headers(
-            'PUT',
-            manUrl,
-            creds.region,
-            creds.accessKeyId,
-            creds.secretAccessKey,
-            manifestBuf,
-            { 'content-type': 'application/json' }
-          );
-          await s3HttpRequest('PUT', manUrl, manHeaders, manifestBuf, 15000).catch(() => {});
+          const manHeaders = getSigV4Headers('PUT', manUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, manBuf, {
+            'content-type': 'application/json',
+            'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+          }, true);
+          await s3HttpRequest('PUT', manUrl, manHeaders, manBuf, 15000).catch(() => {});
 
-          // 4. Mark study as synced to S3 in local DB
           const nowIso = new Date().toISOString();
           await db
             .update(hotStagedStudies)
-            .set({
-              isSyncedToS3: true,
-              s3SyncedSliceCount: studySlicesCount,
-              s3CompletedAt: nowIso,
-              updatedAt: nowIso,
-            })
+            .set({ isSyncedToS3: true, s3SyncedSliceCount: studySlicesCount, s3CompletedAt: nowIso, updatedAt: nowIso })
             .where(eq(hotStagedStudies.accessionNumber, study.accessionNumber));
 
           totalStudiesCompleted++;
@@ -258,15 +249,14 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
           stats.studiesArchived++;
           stats.slicesArchived += studySlicesCount;
           console.log(`[ARCHIVER] Archived Study ZIP ${s3ZipKey} (${(zipBuf.length / 1048576).toFixed(1)} MB, ${studySlicesCount} slices)`);
-
-          // 5. Enforce 10GB disk quota after each study archival
           await enforceHotStorageQuota().catch(() => {});
         } else if (res.status === 429 || res.status === 503) {
           consecutiveRateLimits++;
+          const errSnippet = (await res.text().catch(() => '')).slice(0, 180);
           const cooldownMs = parseRetryAfterMs(res.headers?.['retry-after'], consecutiveRateLimits);
           rateLimitCooldownUntil = Date.now() + cooldownMs;
           stats.cooldownUntil = new Date(rateLimitCooldownUntil).toISOString();
-          stats.lastError = `Telegram S3 Rate Limit (${res.status}): Backing off ${Math.round(cooldownMs / 1000)}s`;
+          stats.lastError = `Telegram S3 Rate Limit (${res.status}) on ${acc}: ${errSnippet}. Backing off ${Math.round(cooldownMs / 1000)}s`;
           console.warn(`[ARCHIVER] ${stats.lastError}`);
           break;
         } else {
@@ -300,17 +290,9 @@ export async function tickArchivalPass(): Promise<{ archivedSlices: number; comp
 }
 
 let archiverTimer: NodeJS.Timeout | null = null;
-
 export function startArchiverDaemon(intervalSeconds = 20): void {
-  if (archiverTimer) return;
-  archiverTimer = setInterval(() => {
-    tickArchivalPass().catch(() => {});
-  }, intervalSeconds * 1000);
+  if (!archiverTimer) archiverTimer = setInterval(() => tickArchivalPass().catch(() => {}), intervalSeconds * 1000);
 }
-
 export function stopArchiverDaemon(): void {
-  if (archiverTimer) {
-    clearInterval(archiverTimer);
-    archiverTimer = null;
-  }
+  if (archiverTimer) { clearInterval(archiverTimer); archiverTimer = null; }
 }

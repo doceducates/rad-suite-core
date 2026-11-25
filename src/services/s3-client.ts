@@ -121,22 +121,12 @@ export function s3HttpRequest(
   });
 }
 
-export function s3HttpPut(
-  urlStr: string,
-  headers: Record<string, string>,
-  body: Buffer,
-  timeoutMs = 25000
-): Promise<S3HttpResponse> {
+export function s3HttpPut(urlStr: string, headers: Record<string, string>, body: Buffer, timeoutMs = 25000): Promise<S3HttpResponse> {
   return s3HttpRequest('PUT', urlStr, headers, body, timeoutMs);
 }
 
-function hmac(key: string | Buffer, string: string): Buffer {
-  return crypto.createHmac('sha256', key).update(string).digest();
-}
-
-function hash(content: string | Buffer): string {
-  return crypto.createHash('sha256').update(content).digest('hex');
-}
+const hmac = (key: string | Buffer, str: string): Buffer => crypto.createHmac('sha256', key).update(str).digest();
+const hash = (content: string | Buffer): string => crypto.createHash('sha256').update(content).digest('hex');
 
 export interface S3Credentials {
   enabled: boolean;
@@ -168,16 +158,17 @@ export function getSigV4Headers(
   accessKey: string,
   secretKey: string,
   payload: Buffer | string = '',
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
+  unsignedPayload: boolean = false
 ): Record<string, string> {
   const url = new URL(urlStr);
   const now = new Date();
   const dateStamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
 
-  const payloadHash = hash(payload);
+  const isUnsigned = unsignedPayload || extraHeaders['x-amz-content-sha256'] === 'UNSIGNED-PAYLOAD';
+  const payloadHash = isUnsigned ? 'UNSIGNED-PAYLOAD' : hash(payload);
 
-  // Canonical query string must be sorted alphabetically by key
   const canonicalQuery = Array.from(url.searchParams.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -272,23 +263,17 @@ export async function testS3Connection(
 
     if (!res.ok) {
       const errText = await res.text();
-      let codeMatch = errText.match(/<Code>([^<]+)<\/Code>/);
-      let msgMatch = errText.match(/<Message>([^<]+)<\/Message>/);
-      const code = codeMatch ? codeMatch[1] : `HTTP ${res.status}`;
-      const msg = msgMatch ? msgMatch[1] : 'S3 Request Failed';
+      const code = errText.match(/<Code>([^<]+)<\/Code>/)?.[1] || `HTTP ${res.status}`;
+      const msg = errText.match(/<Message>([^<]+)<\/Message>/)?.[1] || 'S3 Request Failed';
       return { success: false, latencyMs, message: `${code}: ${msg}` };
     }
 
-    // 2. Discover all available buckets
     let availableBuckets: string[] = [];
     try {
       const rootUrl = buildS3Url({ ...creds, bucket: '' }, '', {});
-      const rootHeaders = getSigV4Headers('GET', rootUrl, creds.region, creds.accessKeyId, creds.secretAccessKey);
-      const rootRes = await s3HttpGet(rootUrl, rootHeaders, 4000);
+      const rootRes = await s3HttpGet(rootUrl, getSigV4Headers('GET', rootUrl, creds.region, creds.accessKeyId, creds.secretAccessKey), 4000);
       if (rootRes.ok) {
-        const rootXml = await rootRes.text();
-        const matches = [...rootXml.matchAll(/<Name>([^<]+)<\/Name>/g)];
-        availableBuckets = matches.map((m) => m[1]);
+        availableBuckets = [...(await rootRes.text()).matchAll(/<Name>([^<]+)<\/Name>/g)].map((m) => m[1]);
       }
     } catch {}
 

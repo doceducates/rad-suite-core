@@ -6,7 +6,7 @@ import {
   type S3HttpResponse,
 } from './s3-client';
 
-const DEFAULT_PART_SIZE = 50 * 1024 * 1024; // 50MB: above 20MB Bot API threshold (routes via VPS proxy) & below 100MB CF limit
+const DEFAULT_PART_SIZE = 22 * 1024 * 1024; // 22MB: >20MB Bot API threshold (routes via VPS proxy, no 15/min limit) & <25MB (Worker MD5 CPU safe, no 1102)
 const MULTIPART_THRESHOLD = 80 * 1024 * 1024; // Single PUT up to 80MB (safely under 100MB Cloudflare limit); Multipart above
 
 function getRetryDelayMs(res: S3HttpResponse, attempt: number): number {
@@ -41,7 +41,8 @@ export async function uploadBufferSmartToS3(
     const putUrl = buildS3Url(creds, keyPath);
     const headers = getSigV4Headers('PUT', putUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, buffer, {
       'content-type': contentType,
-    });
+      'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+    }, true);
     return s3HttpRequest('PUT', putUrl, headers, buffer, 180000);
   }
 
@@ -49,7 +50,8 @@ export async function uploadBufferSmartToS3(
   const initUrl = buildS3Url(creds, keyPath, { uploads: '' });
   const initHeaders = getSigV4Headers('POST', initUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, '', {
     'content-type': contentType,
-  });
+    'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+  }, true);
   const initRes = await s3HttpRequest('POST', initUrl, initHeaders, '', 30000);
   if (!initRes.ok) return initRes;
 
@@ -67,6 +69,7 @@ export async function uploadBufferSmartToS3(
 
   const completedParts: { partNumber: number; etag: string }[] = [];
   const totalParts = Math.ceil(buffer.length / DEFAULT_PART_SIZE);
+  console.log(`[MULTIPART] Started uploadId=${uploadId} for ${keyPath} (${totalParts} parts, ${(buffer.length / 1048576).toFixed(1)} MB)`);
 
   try {
     for (let i = 0; i < totalParts; i++) {
@@ -78,9 +81,17 @@ export async function uploadBufferSmartToS3(
       for (let attempt = 0; attempt < 4; attempt++) {
         const partHeaders = getSigV4Headers('PUT', partUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, chunk, {
           'content-type': 'application/octet-stream',
-        });
+          'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+        }, true);
+        const t0 = Date.now();
         partRes = await s3HttpRequest('PUT', partUrl, partHeaders, chunk, 180000);
-        if (partRes.ok) break;
+        if (partRes.ok) {
+          const rawEtag = partRes.headers?.['etag'];
+          const etag = Array.isArray(rawEtag) ? rawEtag[0] : (rawEtag || '');
+          completedParts.push({ partNumber, etag });
+          console.log(`[MULTIPART] Part ${partNumber}/${totalParts} (${(chunk.length / 1048576).toFixed(1)} MB) uploaded in ${Date.now() - t0}ms`);
+          break;
+        }
         if (partRes.status === 429 || partRes.status === 503) {
           if (attempt === 3) {
             await abortMultipartBestEffort(creds, keyPath, uploadId);
@@ -98,10 +109,6 @@ export async function uploadBufferSmartToS3(
         return partRes!;
       }
 
-      const rawEtag = partRes.headers?.['etag'];
-      const etag = Array.isArray(rawEtag) ? rawEtag[0] : (rawEtag || '');
-      completedParts.push({ partNumber, etag });
-
       // Polite pause between parts to respect Telegram S3 rate limits
       if (partNumber < totalParts) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -116,10 +123,14 @@ export async function uploadBufferSmartToS3(
     const completeUrl = buildS3Url(creds, keyPath, { uploadId });
     const completeHeaders = getSigV4Headers('POST', completeUrl, creds.region, creds.accessKeyId, creds.secretAccessKey, completeXml, {
       'content-type': 'application/xml',
-    });
+      'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+    }, true);
+    console.log(`[MULTIPART] Completing upload for ${keyPath} (${completedParts.length} parts)...`);
     const completeRes = await s3HttpRequest('POST', completeUrl, completeHeaders, completeXml, 600000);
     if (!completeRes.ok) {
       await abortMultipartBestEffort(creds, keyPath, uploadId);
+    } else {
+      console.log(`[MULTIPART] CompleteMultipartUpload succeeded for ${keyPath}`);
     }
     return completeRes;
   } catch (err) {
