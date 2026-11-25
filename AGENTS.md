@@ -92,7 +92,14 @@ Any developer or AI agent modifying this codebase MUST strictly follow these fou
 - **Zero-Leak Invariant**: NEVER hardcode personal doctor credentials, hospital internal IPs (e.g. `10.0.0.100`), or backdoor passwords into core.
 - Reference: [`docs/architecture/modular-plugins-and-open-core.md`](docs/architecture/modular-plugins-and-open-core.md).
 
-## 16. Documentation Index & Subsystem Search Map
+## 16. S3 Cloud Archival, Zero-Direct-DCM & Multipart Invariant
+- **Zero Loose DCM from Edge Nodes**: Remote clinic edge nodes (`clinic-edge`, `s3-uploader.js`, `pacs-harvester.js`) are strictly prohibited from uploading individual `.dcm` files to S3. They must enforce `[S3_GUARD]` and stage exclusively to VPS (`/api/cases/stage`).
+- **VPS Consolidated Archiver**: The cloud VPS (`radiology.sehatai.org`) is the sole archiver. Studies are packaged into single `${accession}.zip` archives with companion `${accession}.manifest.json`.
+- **Multipart Upload & Worker Limits**: Studies >80MB must use S3 Multipart Upload with 22MB chunks (`DEFAULT_PART_SIZE`), `x-amz-content-sha256: 'UNSIGNED-PAYLOAD'` (bypassing Cloudflare Worker CPU Error 1102), polite 3.5s inter-part pauses, and exponential retry on 429/5xx. The S3 processor MUST mount `tg-bot-api-data` to consolidate parts directly from disk.
+- **RadiAnt ZIP Exports**: RadiAnt downloads must be initiated per-study via the row `[ ⤓ ZIP ]` button. Do not request monolithic multi-gigabyte batch ZIPs across dozens of MRI studies in a single request.
+- Reference: [`docs/architecture/S3_ARCHIVAL_AND_STAGING_ARCHITECTURE.md`](docs/architecture/S3_ARCHIVAL_AND_STAGING_ARCHITECTURE.md).
+
+## 17. Documentation Index & Subsystem Search Map
 When working on specific features, refer to the authoritative documentation files in `docs/`:
 
 | Subsystem / Feature Area | Documentation File | Key Concepts & Specs Covered |
@@ -102,6 +109,7 @@ When working on specific features, refer to the authoritative documentation file
 | **Two-Tier PACS & Bandwidth** | [`docs/architecture/two-tier-pacs-ingestion.md`](docs/architecture/two-tier-pacs-ingestion.md) | Strict Tier 1 LAN harvest vs Tier 2 WAN filter, VPS hot-staging, S3 archiver |
 | **HMIS Portal Integration** | [`docs/integrations/hmis-portal.md`](docs/integrations/hmis-portal.md) | Safety locks, Livewire sync, collision release, tracking API, Proceeded Patients |
 | **Cloud Storage & S3 Mirror** | [`docs/architecture/storage-and-cloud.md`](docs/architecture/storage-and-cloud.md) | S3 path-style, Ceph throttling, taxonomy, LRU disk cache, RadiAnt ZIP |
+| **S3 Archival & DICOM Staging** | [`docs/architecture/S3_ARCHIVAL_AND_STAGING_ARCHITECTURE.md`](docs/architecture/S3_ARCHIVAL_AND_STAGING_ARCHITECTURE.md) | Zero loose DCM in S3, VPS consolidated ZIP, 22MB multipart, UNSIGNED-PAYLOAD, Bot API disk mount |
 | **Hospital PACS & Storage Sources** | [`docs/architecture/pacs-and-sources.md`](docs/architecture/pacs-and-sources.md) | DIMSE C-GET, hospital PACS direct harvester, 5-tier federated aggregator |
 | **Two-Tier PACS & Anti-Choking** | [`docs/architecture/hospital-pacs-stability-and-vitrea.md`](docs/architecture/hospital-pacs-stability-and-vitrea.md) | Port 8040 anti-choking invariant, daytime focused keywords, Vitrea 192.168.0.151 ingestion, scanner recovery |
 | **Clinic PC Edge Nodes** | [`docs/architecture/clinic-pc-nodes.md`](docs/architecture/clinic-pc-nodes.md) | Reverse-command heartbeat, Windows Session 0 service, SigV4 edge, OTA |
