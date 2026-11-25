@@ -1,35 +1,6 @@
-import http from 'http';
-import https from 'https';
 import crypto from 'crypto';
-import dns from 'dns';
 import type { UnifiedStorageSettings } from '@/types/pacs';
 import { getInternalStorageCredentials } from './storage-config.service';
-
-if (typeof (dns as any)?.setDefaultResultOrder === 'function') {
-  (dns as any).setDefaultResultOrder('ipv4first');
-}
-
-function s3DnsLookup(
-  hostname: string,
-  options: any,
-  callback: (err: NodeJS.ErrnoException | null, address: any, family?: number) => void
-) {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  const resolvedIp = process.env.S3_RESOLVED_IP;
-  if (resolvedIp && (hostname === 's3.sehatai.org' || hostname === process.env.S3_CUSTOM_HOST)) {
-    if (options && options.all) {
-      return callback(null, [{ address: resolvedIp, family: 4 }]);
-    }
-    return callback(null, resolvedIp, 4);
-  }
-  return dns.lookup(hostname, options, callback);
-}
-
-const httpsKeepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 10, lookup: s3DnsLookup });
-const httpKeepAliveAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 
 export interface S3HttpResponse {
   ok: boolean;
@@ -39,86 +10,49 @@ export interface S3HttpResponse {
   arrayBuffer: () => Promise<Buffer>;
 }
 
-export function s3HttpGet(
-  urlStr: string,
-  headers: Record<string, string>,
-  timeoutMs = 8000
-): Promise<S3HttpResponse> {
-  return new Promise((resolve, reject) => {
-    const isHttps = urlStr.startsWith('https:');
-    const client = isHttps ? https : http;
-    const agent = isHttps ? httpsKeepAliveAgent : httpKeepAliveAgent;
-
-    const req = client.get(urlStr, { headers, agent, timeout: timeoutMs }, (res) => {
-      res.on('error', reject);
-      const chunks: Buffer[] = [];
-      res.on('data', (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
-      res.on('end', () => {
-        const fullBuf = Buffer.concat(chunks);
-        resolve({
-          ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
-          status: res.statusCode || 0,
-          headers: res.headers,
-          text: async () => fullBuf.toString('utf8'),
-          arrayBuffer: async () => fullBuf,
-        });
-      });
-    });
-
-    req.on('timeout', () => {
-      req.destroy(new Error('ETIMEDOUT'));
-    });
-    req.on('error', reject);
-  });
-}
-
-export function s3HttpRequest(
+export async function s3HttpRequest(
   method: 'GET' | 'PUT' | 'POST' | 'DELETE',
   urlStr: string,
   headers: Record<string, string>,
   body?: Buffer | string,
   timeoutMs = 25000
 ): Promise<S3HttpResponse> {
-  return new Promise((resolve, reject) => {
-    const isHttps = urlStr.startsWith('https:');
-    const client = isHttps ? https : http;
-    const agent = isHttps ? httpsKeepAliveAgent : httpKeepAliveAgent;
-    const bodyBuf = body === undefined ? undefined : (Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8'));
+  const reqHeaders: Record<string, string> = { ...headers };
+  const bodyBuf = body === undefined ? undefined : (Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8'));
+  if (bodyBuf) {
+    reqHeaders['content-length'] = bodyBuf.length.toString();
+  }
 
-    const req = client.request(
-      urlStr,
-      {
-        method,
-        headers: bodyBuf
-          ? { ...headers, 'content-length': bodyBuf.length.toString() }
-          : headers,
-        agent,
-        timeout: timeoutMs,
-      },
-      (res) => {
-        res.on('error', reject);
-        const chunks: Buffer[] = [];
-        res.on('data', (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
-        res.on('end', () => {
-          const fullBuf = Buffer.concat(chunks);
-          resolve({
-            ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
-            status: res.statusCode || 0,
-            headers: res.headers,
-            text: async () => fullBuf.toString('utf8'),
-            arrayBuffer: async () => fullBuf,
-          });
-        });
-      }
-    );
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    req.on('timeout', () => {
-      req.destroy(new Error('ETIMEDOUT'));
+  try {
+    const res = await fetch(urlStr, {
+      method,
+      headers: reqHeaders,
+      body: bodyBuf,
+      signal: controller.signal,
     });
-    req.on('error', reject);
-    if (bodyBuf) req.write(bodyBuf);
-    req.end();
-  });
+    const fullBuf = Buffer.from(await res.arrayBuffer());
+    const resHeaders: Record<string, string | string[]> = {};
+    res.headers.forEach((v, k) => {
+      resHeaders[k] = v;
+    });
+
+    return {
+      ok: res.ok,
+      status: res.status,
+      headers: resHeaders,
+      text: async () => fullBuf.toString('utf8'),
+      arrayBuffer: async () => fullBuf,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export function s3HttpGet(urlStr: string, headers: Record<string, string>, timeoutMs = 8000): Promise<S3HttpResponse> {
+  return s3HttpRequest('GET', urlStr, headers, undefined, timeoutMs);
 }
 
 export function s3HttpPut(urlStr: string, headers: Record<string, string>, body: Buffer, timeoutMs = 25000): Promise<S3HttpResponse> {
