@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Rad Suite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.radsuite.workstation",
   "build": {
     "frontendDist": "../out",
@@ -44,7 +44,9 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["English"],
+        "languages": [
+          "English"
+        ],
         "startMenuFolder": "Rad Suite"
       }
     }
