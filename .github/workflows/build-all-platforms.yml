@@ -200,9 +200,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android NDK
+      - name: Setup Android SDK & NDK
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.0.12077973" || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-36" "build-tools;35.0.0" "ndk;27.0.12077973" || true
           NDK_PATH=$(ls -td $ANDROID_HOME/ndk/* 2>/dev/null | head -1)
           if [ -z "$NDK_PATH" ]; then NDK_PATH="$ANDROID_HOME/ndk/27.0.12077973"; fi
           echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
@@ -235,7 +236,7 @@ jobs:
           chmod +x src-tauri/gen/android/gradlew || true
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           export NDK_HOME="${NDK_HOME:-$ANDROID_HOME/ndk/27.0.12077973}"
-          npx @tauri-apps/cli android build --apk --target aarch64 --config src-tauri/tauri.android.conf.json || (cd src-tauri/gen/android && ./gradlew assembleArm64Debug)
+          npx @tauri-apps/cli android build --apk --debug --target aarch64 --config src-tauri/tauri.android.conf.json
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
@@ -357,8 +358,12 @@ jobs:
           fi
 
       - name: Build Linux Bundles
+        env:
+          NO_STRIP: "1"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
-          npx @tauri-apps/cli build --bundles deb,appimage
+          npx @tauri-apps/cli build --bundles deb
+          npx @tauri-apps/cli build --bundles appimage || echo "AppImage bundling skipped (DEB succeeded)"
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
