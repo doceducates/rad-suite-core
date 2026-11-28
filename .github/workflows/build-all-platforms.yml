@@ -23,6 +23,9 @@ concurrency:
   group: build-all-platforms-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   # ============================================================
   # 0. CI VALIDATION (Runs on every push to branches)
@@ -51,18 +54,83 @@ jobs:
         run: npm run build
 
   # ============================================================
+  # 0b. AUTO SEMANTIC VERSION BUMP & TAG (public-release pushes)
+  # ============================================================
+  auto-bump:
+    name: Auto Semantic Version Bump
+    needs: [validate-core]
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/public-release' &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[skip release]') &&
+      !startsWith(github.event.head_commit.message, 'chore(release):')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: public-release
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Determine Bump Type & Synchronize Version
+        id: bump
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if echo "$COMMIT_MSG" | grep -qi '\[major\]'; then
+            BUMP="major"
+          elif echo "$COMMIT_MSG" | grep -qi '\[minor\]'; then
+            BUMP="minor"
+          else
+            BUMP="patch"
+          fi
+          echo "Applying semantic bump: $BUMP"
+          node ./scripts/bump-version.js "$BUMP"
+          NEW_VER=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEW_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Commit Bumped Version & Push Tag
+        run: |
+          NEW_VER="${{ steps.bump.outputs.version }}"
+          TAG="${{ steps.bump.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          if [ -f src-tauri/gen/android/app/build.gradle.kts ]; then
+            git add src-tauri/gen/android/app/build.gradle.kts
+          fi
+          git commit -m "chore(release): $TAG [skip ci]"
+          git tag -f "$TAG"
+          git push origin HEAD:public-release
+          git push origin "$TAG" --force
+
+  # ============================================================
   # 1. WINDOWS DESKTOP (NSIS x64)
   # ============================================================
   build-windows:
     name: Windows x64 Installer
-    needs: [validate-core]
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    needs: [validate-core, auto-bump]
+    if: |
+      always() &&
+      needs.validate-core.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success')
     runs-on: windows-latest
     continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.auto-bump.outputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js 22
@@ -92,7 +160,7 @@ jobs:
 
       - name: Build Next.js Standalone & Tauri Installer
         run: |
-          $ver = "${{ github.event.inputs.version }}"
+          $ver = "${{ needs.auto-bump.outputs.version || github.event.inputs.version }}"
           if (-not $ver) { $ver = "${{ github.ref_name }}".TrimStart('v') }
           if (-not $ver) { $ver = "1.0.0" }
           $notes = "${{ github.event.inputs.release_notes }}"
@@ -113,13 +181,18 @@ jobs:
   # ============================================================
   build-android:
     name: Android APK (ARM64)
-    needs: [validate-core]
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    needs: [validate-core, auto-bump]
+    if: |
+      always() &&
+      needs.validate-core.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success')
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.auto-bump.outputs.tag || github.ref }}
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -176,13 +249,18 @@ jobs:
   # ============================================================
   build-macos:
     name: macOS DMG (Apple Silicon)
-    needs: [validate-core]
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    needs: [validate-core, auto-bump]
+    if: |
+      always() &&
+      needs.validate-core.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success')
     runs-on: macos-14
     continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.auto-bump.outputs.tag || github.ref }}
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -220,13 +298,18 @@ jobs:
   # ============================================================
   build-linux:
     name: Linux Packages (.deb / .AppImage)
-    needs: [validate-core]
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    needs: [validate-core, auto-bump]
+    if: |
+      always() &&
+      needs.validate-core.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success')
     runs-on: ubuntu-22.04
     continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.auto-bump.outputs.tag || github.ref }}
 
       - name: Install System Dependencies for WebKitGTK
         run: |
@@ -269,9 +352,9 @@ jobs:
   # ============================================================
   publish-all:
     name: Publish Consolidated Release
-    needs: [build-windows, build-android, build-macos, build-linux]
+    needs: [auto-bump, build-windows, build-android, build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: always() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && (needs.build-windows.result == 'success' || needs.build-android.result == 'success' || needs.build-macos.result == 'success' || needs.build-linux.result == 'success')
+    if: always() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success') && (needs.build-windows.result == 'success' || needs.build-android.result == 'success' || needs.build-macos.result == 'success' || needs.build-linux.result == 'success')
     steps:
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v4
@@ -304,8 +387,8 @@ jobs:
       - name: Publish All Platforms to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
-          name: Rad Suite Multi-Platform Release ${{ github.event.inputs.version || github.ref_name }}
+          tag_name: ${{ needs.auto-bump.outputs.tag || (github.event.inputs.version && format('v{0}', github.event.inputs.version)) || github.ref_name }}
+          name: Rad Suite Multi-Platform Release ${{ needs.auto-bump.outputs.version || github.event.inputs.version || github.ref_name }}
           files: |
             releases/windows/*.exe
             releases/windows/latest.json
