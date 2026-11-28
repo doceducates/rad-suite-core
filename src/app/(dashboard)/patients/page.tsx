@@ -3,5 +3,5 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 export default function PatientsRedirectPage() {
-  redirect('/worklist?tab=archive');
+  redirect('/hmis?tab=archive');
 }

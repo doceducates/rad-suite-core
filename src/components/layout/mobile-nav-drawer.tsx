@@ -179,6 +179,9 @@ export function MobileNavDrawer({
                 if (item.roles && !item.roles.includes(userRole as any)) return false;
                 if (userRole !== 'admin') {
                   if (item.id === 'pacs') return true;
+                  if (item.id === 'hmis' && allowedScreens && (allowedScreens.includes('hmis') || allowedScreens.includes('worklist'))) {
+                    return true;
+                  }
                   if (allowedScreens && !allowedScreens.includes('*') && !allowedScreens.includes(item.id)) {
                     return false;
                   }

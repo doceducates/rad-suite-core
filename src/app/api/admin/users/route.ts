@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     const screensJson = allowedScreens && allowedScreens.length > 0
       ? JSON.stringify(allowedScreens)
-      : JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']);
+      : JSON.stringify(['my_cases', 'hmis', 'workstation', 'studio']);
 
     const defaultTitle = title?.trim() || (role === 'pgr' ? 'Resident Radiologist (PGR)' : role === 'admin' ? 'Administrator' : 'Consultant Radiologist');
 

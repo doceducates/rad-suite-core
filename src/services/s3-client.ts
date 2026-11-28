@@ -30,7 +30,7 @@ export async function s3HttpRequest(
     const res = await fetch(urlStr, {
       method,
       headers: reqHeaders,
-      body: bodyBuf,
+      body: bodyBuf ? new Uint8Array(bodyBuf) : undefined,
       signal: controller.signal,
     });
     const fullBuf = Buffer.from(await res.arrayBuffer());

@@ -267,7 +267,7 @@ export async function registerUser(input: RegisterUserInput): Promise<{ user: Us
   let assignedRole: UserRole;
   let assignedTitle: string;
   let assignedStatus: 'active' | 'waitlisted' = 'waitlisted';
-  let allowedScreens = JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']);
+  let allowedScreens = JSON.stringify(['my_cases', 'hmis', 'workstation', 'studio']);
   let inviteCodeUsed: string | undefined = undefined;
 
   const masterAdminEmails = [

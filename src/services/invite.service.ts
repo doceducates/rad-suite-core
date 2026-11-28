@@ -28,7 +28,7 @@ export const inviteService = {
 
     const allowedScreens = input.allowedScreens && input.allowedScreens.length > 0
       ? JSON.stringify(input.allowedScreens)
-      : JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']);
+      : JSON.stringify(['my_cases', 'hmis', 'workstation', 'studio']);
 
     let expiresAt: Date | null = null;
     if (input.expiresInDays && input.expiresInDays > 0) {
@@ -99,7 +99,7 @@ export const inviteService = {
           id: 'alpha-master-code-2026',
           code: cleanCode,
           role: 'radiologist',
-          allowedScreens: JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']),
+          allowedScreens: JSON.stringify(['my_cases', 'hmis', 'workstation', 'studio']),
           maxUses: 9999 as any,
           usesCount: 0 as any,
           expiresAt: null,
@@ -198,7 +198,7 @@ export const inviteService = {
       code: r.code,
       role: r.role as UserRole,
       allowedScreens: (() => {
-        try { return JSON.parse(r.allowedScreens); } catch { return ['my_cases', 'worklist', 'workstation']; }
+        try { return JSON.parse(r.allowedScreens); } catch { return ['my_cases', 'hmis', 'workstation']; }
       })(),
       maxUses: Number(r.maxUses),
       usesCount: Number(r.usesCount),

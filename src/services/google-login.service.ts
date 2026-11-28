@@ -43,7 +43,7 @@ export function getGoogleLoginAuthUrl(options: {
   }
 
   const isAtlas = (options.customAppUrl?.toLowerCase().includes('atlas') ?? false) || config.isAtlasMode;
-  const defaultRedirect = isAtlas ? '/dashboard' : '/worklist';
+  const defaultRedirect = isAtlas ? '/dashboard' : '/hmis';
 
   const statePayload: GoogleLoginState = {
     intent: options.intent || 'login',
@@ -157,8 +157,8 @@ export async function handleGoogleOAuthLogin(params: {
 
     const isWaitlisted = existingUser.status === 'waitlisted' || existingUser.status === 'pending_invite';
     const isAtlasTarget = config.isAtlasMode || existingUser.role === 'student' || (params.customAppUrl?.toLowerCase().includes('atlas') ?? false) || Boolean(statePayload.redirect?.includes('atlas'));
-    let targetUrl = isWaitlisted ? '/pending-access' : (statePayload.redirect || (isAtlasTarget ? '/dashboard' : '/worklist'));
-    if (isAtlasTarget && (targetUrl === '/worklist' || targetUrl === '/my-cases')) {
+    let targetUrl = isWaitlisted ? '/pending-access' : (statePayload.redirect || (isAtlasTarget ? '/dashboard' : '/hmis'));
+    if (isAtlasTarget && (targetUrl === '/hmis' || targetUrl === '/worklist' || targetUrl === '/my-cases')) {
       targetUrl = '/dashboard';
     }
 
@@ -266,8 +266,8 @@ export async function handleGoogleOAuthLogin(params: {
   });
 
   const isAtlasTarget = config.isAtlasMode || assignedRole === 'student' || (params.customAppUrl?.toLowerCase().includes('atlas') ?? false) || Boolean(statePayload.redirect?.includes('atlas'));
-  let targetUrl = assignedStatus === 'waitlisted' ? '/pending-access' : (statePayload.redirect || (isAtlasTarget ? '/dashboard' : '/worklist'));
-  if (isAtlasTarget && (targetUrl === '/worklist' || targetUrl === '/my-cases')) {
+  let targetUrl = assignedStatus === 'waitlisted' ? '/pending-access' : (statePayload.redirect || (isAtlasTarget ? '/dashboard' : '/hmis'));
+  if (isAtlasTarget && (targetUrl === '/hmis' || targetUrl === '/worklist' || targetUrl === '/my-cases')) {
     targetUrl = '/dashboard';
   }
 

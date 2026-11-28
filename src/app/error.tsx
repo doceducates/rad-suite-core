@@ -50,10 +50,10 @@ export default function ErrorBoundary({ error, reset }: ErrorProps) {
             <span>Reload Viewport</span>
           </Button>
 
-          <Link href="/worklist" className="w-full sm:w-auto">
+          <Link href="/hmis" className="w-full sm:w-auto">
             <Button variant="outline" size="sm" className="w-full gap-1.5 h-9">
               <FileText className="w-3.5 h-3.5" />
-              <span>Return to Worklist</span>
+              <span>Return to HMIS</span>
             </Button>
           </Link>
         </div>

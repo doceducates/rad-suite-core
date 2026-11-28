@@ -25,7 +25,7 @@ export function InviteCodesTab({ initialInvites }: InviteCodesTabProps) {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
-  const [selectedScreens, setSelectedScreens] = useState<string[]>(['my_cases', 'worklist', 'workstation', 'studio', 'hmis', 'settings']);
+  const [selectedScreens, setSelectedScreens] = useState<string[]>(['my_cases', 'hmis', 'workstation', 'studio', 'settings']);
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 

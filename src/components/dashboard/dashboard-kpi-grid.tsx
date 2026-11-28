@@ -20,7 +20,7 @@ export function DashboardKpiGrid({ kpis }: DashboardKpiGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
       {/* 1. STAT Emergency Queue */}
-      <Link href="/worklist?priority=stat" className="block group">
+      <Link href="/hmis?priority=stat" className="block group">
         <Card className={`p-4 h-full transition-all duration-200 hover:shadow-xs hover:border-error/50 ${
           kpis.statPendingCount > 0
             ? 'bg-error-container/15 border-error/40 ring-1 ring-error/20'
@@ -59,7 +59,7 @@ export function DashboardKpiGrid({ kpis }: DashboardKpiGridProps) {
       </Link>
 
       {/* 2. Reporting Velocity & Shift Target */}
-      <Link href="/worklist?status=final" className="block group">
+      <Link href="/hmis?status=final" className="block group">
         <Card className="p-4 h-full bg-surface-container-low border-outline-variant/60 transition-all duration-200 hover:shadow-xs hover:border-primary/40">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-secondary uppercase tracking-wider">

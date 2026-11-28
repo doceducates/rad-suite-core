@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { AnatomicalSystemId } from '../data/schema';
+import type { AnatomicalSex, AnatomicalSystemId } from '../data/schema';
 
 export type ViewportMode = '3d' | 'split' | '2d';
 export type ClippingAxis = 'axial' | 'sagittal' | 'coronal';
@@ -13,16 +13,22 @@ export interface ClippingPlaneConfig {
 }
 
 export interface AtlasState {
+  activeGender: AnatomicalSex;
+  showGhostBody: boolean;
   visibleSystems: Set<AnatomicalSystemId>;
   systemOpacities: Record<AnatomicalSystemId, number>;
   selectedStructureId: string | null;
   hoveredStructureId: string | null;
   hiddenStructureIds: Set<string>;
+  fadedStructureIds: Set<string>;
+  fadeOthersExceptId: string | null;
   isolatedStructureId: string | null;
   explodeFactor: number;
   clippingPlane: ClippingPlaneConfig;
   viewportMode: ViewportMode;
 
+  setGender: (gender: AnatomicalSex) => void;
+  toggleGhostBody: () => void;
   toggleSystem: (system: AnatomicalSystemId) => void;
   setSystemVisible: (system: AnatomicalSystemId, visible: boolean) => void;
   setVisibleSystems: (systems: Set<AnatomicalSystemId>) => void;
@@ -30,6 +36,8 @@ export interface AtlasState {
   selectStructure: (id: string | null) => void;
   hoverStructure: (id: string | null) => void;
   hideStructure: (id: string) => void;
+  fadeStructure: (id: string) => void;
+  fadeOthers: (id: string | null) => void;
   isolateStructure: (id: string | null) => void;
   restoreHiddenStructures: () => void;
   setExplodeFactor: (factor: number) => void;
@@ -45,12 +53,12 @@ const DEFAULT_OPACITIES: Record<AnatomicalSystemId, number> = {
   muscular: 1.0,
   circulatory: 1.0,
   nervous: 1.0,
-  respiratory: 0.9,
-  digestive: 0.9,
-  urinary: 0.9,
-  reproductive: 0.9,
-  endocrine: 0.85,
-  lymphatic: 0.85,
+  respiratory: 1.0,
+  digestive: 1.0,
+  urinary: 1.0,
+  reproductive: 1.0,
+  endocrine: 1.0,
+  lymphatic: 1.0,
   integumentary: 0.35,
 };
 
@@ -62,11 +70,15 @@ class AtlasStoreManager {
 
   constructor() {
     this.state = {
+      activeGender: 'male',
+      showGhostBody: false,
       visibleSystems: new Set(DEFAULT_VISIBLE),
       systemOpacities: { ...DEFAULT_OPACITIES },
       selectedStructureId: null,
       hoveredStructureId: null,
       hiddenStructureIds: new Set(),
+      fadedStructureIds: new Set(),
+      fadeOthersExceptId: null,
       isolatedStructureId: null,
       explodeFactor: 0.0,
       clippingPlane: {
@@ -77,6 +89,11 @@ class AtlasStoreManager {
         showPlaneHelper: true,
       },
       viewportMode: '3d',
+
+      setGender: (gender: AnatomicalSex) =>
+        this.setState({ activeGender: gender, selectedStructureId: null, isolatedStructureId: null }),
+
+      toggleGhostBody: () => this.setState({ showGhostBody: !this.state.showGhostBody }),
 
       toggleSystem: (system: AnatomicalSystemId) => {
         const next = new Set(this.state.visibleSystems);
@@ -114,10 +131,27 @@ class AtlasStoreManager {
         this.setState({ hiddenStructureIds: next, selectedStructureId: null });
       },
 
+      fadeStructure: (id: string) => {
+        const next = new Set(this.state.fadedStructureIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        this.setState({ fadedStructureIds: next });
+      },
+
+      fadeOthers: (id: string | null) =>
+        this.setState({
+          fadeOthersExceptId: this.state.fadeOthersExceptId === id ? null : id,
+        }),
+
       isolateStructure: (id: string | null) => this.setState({ isolatedStructureId: id }),
 
       restoreHiddenStructures: () =>
-        this.setState({ hiddenStructureIds: new Set(), isolatedStructureId: null }),
+        this.setState({
+          hiddenStructureIds: new Set(),
+          fadedStructureIds: new Set(),
+          fadeOthersExceptId: null,
+          isolatedStructureId: null,
+        }),
 
       setExplodeFactor: (factor: number) =>
         this.setState({ explodeFactor: Math.max(0, Math.min(1, factor)) }),
@@ -129,11 +163,15 @@ class AtlasStoreManager {
 
       resetAll: () =>
         this.setState({
+          activeGender: this.state.activeGender,
+          showGhostBody: false,
           visibleSystems: new Set(DEFAULT_VISIBLE),
           systemOpacities: { ...DEFAULT_OPACITIES },
           selectedStructureId: null,
           hoveredStructureId: null,
           hiddenStructureIds: new Set(),
+          fadedStructureIds: new Set(),
+          fadeOthersExceptId: null,
           isolatedStructureId: null,
           explodeFactor: 0.0,
           clippingPlane: {
@@ -148,12 +186,12 @@ class AtlasStoreManager {
     };
   }
 
-  public getState = (): AtlasState => this.state;
-
-  public setState(partial: Partial<AtlasState>): void {
+  private setState(partial: Partial<AtlasState>): void {
     this.state = { ...this.state, ...partial };
-    this.listeners.forEach((listener) => listener());
+    this.listeners.forEach((l) => l());
   }
+
+  public getState = (): AtlasState => this.state;
 
   public subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);
@@ -161,19 +199,13 @@ class AtlasStoreManager {
   };
 }
 
-export const atlasStoreInstance = new AtlasStoreManager();
+export const atlasStore = new AtlasStoreManager();
 
-export function useAtlasStore(): AtlasState;
-export function useAtlasStore<T>(selector: (state: AtlasState) => T): T;
-export function useAtlasStore<T>(selector?: (state: AtlasState) => T): T | AtlasState {
-  const state = useSyncExternalStore(
-    atlasStoreInstance.subscribe,
-    atlasStoreInstance.getState,
-    atlasStoreInstance.getState
-  );
-  return selector ? selector(state) : state;
+function useAtlasStoreHook(): AtlasState {
+  return useSyncExternalStore(atlasStore.subscribe, atlasStore.getState, atlasStore.getState);
 }
 
-useAtlasStore.getState = atlasStoreInstance.getState;
-useAtlasStore.setState = (partial: Partial<AtlasState>) => atlasStoreInstance.setState(partial);
-useAtlasStore.subscribe = atlasStoreInstance.subscribe;
+export const useAtlasStore = Object.assign(useAtlasStoreHook, {
+  getState: atlasStore.getState,
+  subscribe: atlasStore.subscribe,
+});

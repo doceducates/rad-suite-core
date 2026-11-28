@@ -202,7 +202,9 @@ export async function syncHmisAndPacsWorklist(
 
   const effectiveFilters: HmisWorklistFilters = {
     perPage: 100,
-    fetchAllPages: false,
+    fetchAllPages: true,
+    maxPages: 10,
+    bypassCache: true,
     ...filters,
   };
 

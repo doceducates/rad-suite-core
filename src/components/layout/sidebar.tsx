@@ -201,6 +201,7 @@ export function Sidebar({ userRole = 'radiologist', userName, userTitle, allowed
                 if (userRole === 'admin') return true;
                 if (i.id === 'pacs') return true;
                 if (!allowedScreens || allowedScreens.includes('*')) return true;
+                if (i.id === 'hmis' && (allowedScreens.includes('hmis') || allowedScreens.includes('worklist'))) return true;
                 return allowedScreens.includes(i.id);
               });
             if (items.length === 0) return null;

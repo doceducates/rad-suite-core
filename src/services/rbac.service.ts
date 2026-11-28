@@ -24,14 +24,13 @@ export type FeaturePermission =
 export const ALL_SCREENS: ScreenDefinition[] = [
   { id: 'dashboard', name: 'Command Center', description: 'Central clinical dashboard and shift telemetry', href: '/dashboard', category: 'clinical' },
   { id: 'my_cases', name: 'My Cases', description: 'Assigned active reporting cases', href: '/my-cases', category: 'clinical' },
-  { id: 'worklist', name: 'HMIS Worklist', description: 'Central patient queue and worklist', href: '/worklist', category: 'clinical' },
+  { id: 'hmis', name: 'HMIS', description: 'Central patient queue and clinical reporting worklist', href: '/hmis', category: 'clinical' },
   { id: 'pacs', name: 'PACS Studies', description: 'Direct DICOM query and retrieval (Restricted)', href: '/pacs', category: 'clinical', isRestrictedByDefault: true },
   { id: 'workspace', name: 'Workspace', description: 'Multi-slice DICOM viewer & reporting editor', href: '/workspace', category: 'clinical' },
   { id: 'atlas', name: 'Anatomy Atlas', description: 'Interactive multi-planar cross-sectional anatomy atlas', href: '/atlas', category: 'imaging', isRestrictedByDefault: true },
   { id: 'studio', name: 'Voice Lab Studio', description: 'AI clinical dictation & audio macros', href: '/studio', category: 'imaging' },
   { id: 'intake', name: 'Intake & OCR', description: 'Requisition scanning and history extraction', href: '/intake', category: 'imaging' },
-  { id: 'archive', name: 'Archive & Logbook', description: 'Finalized reports and clinical logbook', href: '/worklist?tab=archive', category: 'imaging' },
-  { id: 'hmis', name: 'HMIS Bridge', description: 'Hospital portal synchronization bridge', href: '/hmis', category: 'system' },
+  { id: 'archive', name: 'Archive & Logbook', description: 'Finalized reports and clinical logbook', href: '/hmis?tab=archive', category: 'imaging' },
   { id: 'audit', name: 'Security Audit Trail', description: 'Immutable HIPAA compliance logs', href: '/audit', category: 'system', isRestrictedByDefault: true },
   { id: 'settings', name: 'Settings', description: 'User profile and system settings', href: '/settings', category: 'system' },
   { id: 'users', name: 'User Management & RBAC', description: 'Alpha access, invite codes and clinician roles', href: '/users', category: 'system', isRestrictedByDefault: true },
@@ -72,6 +71,10 @@ export const rbacService = {
 
     if (screenId === 'workspace' || screenId === 'workstation') {
       return allowed.includes('workspace') || allowed.includes('workstation');
+    }
+
+    if (screenId === 'hmis' || screenId === 'worklist') {
+      return allowed.includes('hmis') || allowed.includes('worklist');
     }
 
     return allowed.includes(screenId);
@@ -180,7 +183,7 @@ export const rbacService = {
    * Parse allowed screens array from either array or JSON string
    */
   parseAllowedScreens(input: any): string[] {
-    if (!input) return ['my_cases', 'worklist', 'workstation', 'studio', 'hmis', 'settings'];
+    if (!input) return ['my_cases', 'hmis', 'workstation', 'studio', 'settings'];
     if (Array.isArray(input)) return input;
     if (typeof input === 'string') {
       try {

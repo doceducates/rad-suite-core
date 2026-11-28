@@ -32,7 +32,7 @@ export function CliniciansRbacTab({ initialUsers }: CliniciansRbacTabProps) {
     setEditingUser(u);
     setEditRole(u.role || 'consultant');
     setEditStatus(u.status || 'active');
-    setSelectedScreens(Array.isArray(u.allowedScreens) ? u.allowedScreens : ['my_cases', 'worklist', 'workstation', 'studio']);
+    setSelectedScreens(Array.isArray(u.allowedScreens) ? u.allowedScreens : ['my_cases', 'hmis', 'workstation', 'studio']);
     let parsedStorage = ['local', 'gdrive'];
     try {
       if (Array.isArray(u.allowedStorageSources)) parsedStorage = u.allowedStorageSources;

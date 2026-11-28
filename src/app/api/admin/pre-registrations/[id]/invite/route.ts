@@ -41,7 +41,7 @@ export async function POST(
 
     const invite = await inviteService.createInviteCode({
       role: targetRole,
-      allowedScreens: ['my_cases', 'worklist', 'workstation', 'studio', 'hmis', 'settings'],
+      allowedScreens: ['my_cases', 'hmis', 'workstation', 'studio', 'settings'],
       maxUses: 1,
       expiresInDays: 30,
       recipientName: lead.fullName,

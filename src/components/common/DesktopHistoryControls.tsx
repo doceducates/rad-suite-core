@@ -20,7 +20,7 @@ export function DesktopHistoryControls({
   const isMobile = useIsMobile();
 
   const isAtlas = typeof window !== 'undefined' && window.location.hostname.includes('atlas');
-  const homeRoute = isAtlas ? '/dashboard' : '/worklist';
+  const homeRoute = isAtlas ? '/dashboard' : '/hmis';
 
   // Keyboard shortcut listener: Alt+Left for Back, Alt+Right for Forward, Ctrl+R for Reload
   useEffect(() => {

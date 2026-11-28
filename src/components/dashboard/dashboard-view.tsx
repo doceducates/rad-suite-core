@@ -80,7 +80,7 @@ export function DashboardView({
         router.push(`/workstation?accession=${encodeURIComponent(data.activeDraft.accessionNumber)}`);
       } else if (e.key.toLowerCase() === 'w' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        router.push('/worklist');
+        router.push('/hmis');
       } else if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         router.push('/my-cases');

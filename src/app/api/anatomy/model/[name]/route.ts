@@ -5,6 +5,8 @@ import { rbacService } from '@/services/rbac.service';
 import { withAuth } from '@/lib/api-handler';
 
 const ALLOWED_MODELS = new Set([
+  'brain',
+  'ghost',
   'skeletal',
   'muscular',
   'circulatory',
@@ -20,6 +22,13 @@ const ALLOWED_MODELS = new Set([
   'visceral',
 ]);
 
+function isModelAllowed(name: string): boolean {
+  if (ALLOWED_MODELS.has(name)) return true;
+  if (name.startsWith('micro_') || name.startsWith('action_') || name.startsWith('xs_')) return true;
+  if (name.startsWith('tooth_') || name.startsWith('skull_')) return true;
+  return false;
+}
+
 const MODEL_SEARCH_PATHS = [
   path.join(process.cwd(), 'plugins/anatomy-atlas/models'),
   path.resolve(process.cwd(), '../rad-suite-core/plugins/anatomy-atlas/models'),
@@ -28,9 +37,16 @@ const MODEL_SEARCH_PATHS = [
 
 function resolveModelPath(name: string): string | null {
   for (const dir of MODEL_SEARCH_PATHS) {
-    const candidate = path.join(dir, `${name}.glb`);
-    if (fs.existsSync(candidate)) {
-      return candidate;
+    const candidates = [
+      path.join(dir, `${name}.glb`),
+      path.join(dir, 'micro', `${name}.glb`),
+      path.join(dir, 'actions', `${name}.glb`),
+      path.join(dir, 'regional', `${name}.glb`),
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
     }
   }
   return null;
@@ -48,7 +64,7 @@ export const GET = withAuth<{ name: string }>(
     const rawName = params?.name?.replace(/\.glb$/, '');
     const safeName = rawName?.replace(/[^a-zA-Z0-9_-]/g, '') || '';
 
-    if (!safeName || !ALLOWED_MODELS.has(safeName)) {
+    if (!safeName || !isModelAllowed(safeName)) {
       return NextResponse.json(
         { success: false, error: `Invalid or unsupported model: ${safeName}` },
         { status: 400 }

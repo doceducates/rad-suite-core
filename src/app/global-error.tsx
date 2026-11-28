@@ -30,10 +30,10 @@ export default function GlobalError({
             </button>
             <button
               type="button"
-              onClick={() => { window.location.href = '/worklist'; }}
+              onClick={() => { window.location.href = '/hmis'; }}
               className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer"
             >
-              Return to Worklist
+              Return to HMIS
             </button>
           </div>
         </div>

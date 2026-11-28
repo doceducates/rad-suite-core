@@ -160,38 +160,21 @@ export function buildHmisSyncPayload(
   const toYmd = (offsetDays: number = 0) =>
     new Date(now.getTime() - offsetDays * 86400000).toISOString().split('T')[0];
 
+  const rawQuery = (options.searchQuery || safeCustomFilters.searchQuery || safeCustomFilters.query || '') as string;
+  const hasIdentifierQuery = Boolean(rawQuery?.trim());
+
+  // Invariant: Unfiltered harvest by default upon syncing so all proceeded patients enter the database.
+  // Filtering (modality, body part, dates) happens locally in the UI worklist after scraping.
+  // Specific portal filters are translated ONLY when targeting a specific MRN or Accession.
   const syncBody: Record<string, any> = {
-    perPage: 50,
+    perPage: 100,
     fetchAllPages: true,
-    maxPages: 5,
+    maxPages: 10,
+    bypassCache: true,
     ...safeCustomFilters,
   };
-  if (options.modalityFilter !== 'all') syncBody.modality = options.modalityFilter;
-  if (options.departmentFilter !== 'all') syncBody.department = options.departmentFilter;
 
-  // Resolve dates: explicit custom range > preset range (shift=48h, week=7d, month=30d)
-  if (options.startDate && options.endDate) {
-    syncBody.startDate = options.startDate;
-    syncBody.endDate = options.endDate;
-  } else if (options.dateRange === 'today') {
-    syncBody.startDate = toYmd(0);
-    syncBody.endDate = toYmd(0);
-  } else if (options.dateRange === 'yesterday') {
-    syncBody.startDate = toYmd(1);
-    syncBody.endDate = toYmd(1);
-  } else if (options.dateRange === 'shift' || options.dateRange === 'recent' || options.dateRange === '48h') {
-    syncBody.startDate = toYmd(1); // Covers today and yesterday
-    syncBody.endDate = toYmd(0);
-  } else if (options.dateRange === 'week' || options.dateRange === '7d') {
-    syncBody.startDate = toYmd(7);
-    syncBody.endDate = toYmd(0);
-  } else if (options.dateRange === 'month' || options.dateRange === '30d' || options.dateRange === 'all') {
-    syncBody.startDate = toYmd(30);
-    syncBody.endDate = toYmd(0);
-  }
-
-  const rawQuery = (options.searchQuery || safeCustomFilters.searchQuery || safeCustomFilters.query || '') as string;
-  if (rawQuery?.trim()) {
+  if (hasIdentifierQuery) {
     const q = rawQuery.trim();
     if (/^\d{13,16}$/.test(q)) syncBody.mrn = q;
     else if (/^\d{8,12}$/.test(q)) syncBody.accession = q;
@@ -218,13 +201,11 @@ export function buildHmisSyncPayload(
         syncBody.startDate = toYmd(29);
         syncBody.endDate = toYmd(0);
       } else {
-        // If a custom range was selected, ensure duration does not exceed 30 days
         const start = new Date(syncBody.startDate);
         const end = new Date(syncBody.endDate);
         if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
           const inclusiveDays = Math.round(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
           if (inclusiveDays > 30) {
-            // Clamp to 30 days from chosen start date
             const clampedEnd = new Date(start.getTime() + 29 * 24 * 60 * 60 * 1000);
             syncBody.endDate = clampedEnd.toISOString().split('T')[0];
           }
@@ -232,6 +213,7 @@ export function buildHmisSyncPayload(
       }
     }
   }
+
   return syncBody;
 }
 

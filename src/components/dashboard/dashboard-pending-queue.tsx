@@ -28,7 +28,7 @@ export function DashboardPendingQueue({ cases }: DashboardPendingQueueProps) {
           </p>
         </div>
 
-        <Link href="/worklist?status=pending">
+        <Link href="/hmis?status=pending">
           <Button variant="ghost" size="sm" className="gap-1 text-xs text-secondary hover:text-on-surface">
             <span className="hidden sm:inline">View All</span>
             <span className="sm:hidden">All</span>
@@ -119,7 +119,7 @@ export function DashboardPendingQueue({ cases }: DashboardPendingQueueProps) {
 
         <div className="p-2.5 sm:p-3 bg-surface-container/30 border-t border-outline-variant/40 text-center">
           <Link
-            href="/worklist?status=pending"
+            href="/hmis?status=pending"
             className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
           >
             <span>Manage All Cases On Hold In Worklist</span>

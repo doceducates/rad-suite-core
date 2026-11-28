@@ -27,10 +27,9 @@ export function AddClinicianModal({ isOpen, onClose, onUserCreated }: AddClinici
   const [licenseNo, setLicenseNo] = useState('');
   const [selectedScreens, setSelectedScreens] = useState<string[]>([
     'my_cases',
-    'worklist',
+    'hmis',
     'workstation',
     'studio',
-    'hmis',
     'settings',
   ]);
   const [loading, setLoading] = useState(false);

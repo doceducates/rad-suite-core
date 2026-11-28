@@ -49,7 +49,7 @@ export function initDesktopAuthRequest(options: {
     intent: options.intent || 'login',
     mode: 'desktop',
     inviteCode: options.inviteCode,
-    redirect: options.redirect || '/worklist',
+    redirect: options.redirect || '/hmis',
     customAppUrl: options.customAppUrl,
     desktopAuthId: id,
   });

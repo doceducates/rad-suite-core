@@ -34,7 +34,7 @@ export function DashboardQuickLaunchpad() {
     {
       title: 'Radiopaedia Pool',
       desc: 'Differential diagnosis pearls',
-      href: '/worklist?tab=radiopaedia',
+      href: '/hmis?tab=radiopaedia',
       icon: BookOpen,
       color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
       badge: 'Library',

@@ -36,7 +36,7 @@ export function DashboardUrgentTriage({ cases, totalShiftCases }: DashboardUrgen
           </p>
         </div>
 
-        <Link href="/worklist">
+        <Link href="/hmis">
           <Button variant="ghost" size="sm" className="gap-1 text-xs text-primary hover:text-primary">
             <span className="hidden sm:inline">Worklist</span>
             <span>({totalShiftCases})</span>
@@ -129,7 +129,7 @@ export function DashboardUrgentTriage({ cases, totalShiftCases }: DashboardUrgen
 
         <div className="p-2.5 sm:p-3 bg-surface-container/30 border-t border-outline-variant/40 text-center">
           <Link
-            href="/worklist"
+            href="/hmis"
             className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
           >
             <span>View Full Hospital Worklist Queue</span>

@@ -27,10 +27,10 @@ export default async function HospitalPacsPage() {
           You can continue viewing assigned patient studies and reporting via the HMIS Worklist. Contact your system administrator to request PACS access.
         </p>
         <div className="pt-2 flex justify-center gap-2">
-          <Link href="/worklist">
+          <Link href="/hmis">
             <Button size="sm" className="gap-1.5">
               <ArrowLeft className="w-3.5 h-3.5" />
-              Return to HMIS Worklist
+              Return to HMIS
             </Button>
           </Link>
         </div>

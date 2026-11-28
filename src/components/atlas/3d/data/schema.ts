@@ -3,6 +3,9 @@
  * Adheres to FMA (Foundational Model of Anatomy) & Terminologia Anatomica 2
  */
 
+export type AnatomicalSex = 'male' | 'female';
+export type NodeSexTag = 'shared' | 'male' | 'female';
+
 export type AnatomicalSystemId =
   | 'skeletal'
   | 'muscular'

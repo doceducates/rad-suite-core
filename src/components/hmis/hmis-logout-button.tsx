@@ -82,7 +82,7 @@ export function HmisLogoutButton({
         <div className="relative group">
           <button
             type="button"
-            onClick={() => router.push('/worklist')}
+            onClick={() => router.push('/hmis')}
             title="HMIS Gateway Online (Standby · No active session lock held)"
             className={cn('w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20', className)}
           >
@@ -140,7 +140,7 @@ export function HmisLogoutButton({
       return (
         <button
           type="button"
-          onClick={() => router.push('/worklist')}
+          onClick={() => router.push('/hmis')}
           title="HMIS Gateway Online · Standby (No active session locks)"
           className={cn('w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer', className)}
         >
@@ -187,7 +187,7 @@ export function HmisLogoutButton({
     return (
       <button
         type="button"
-        onClick={() => router.push('/worklist')}
+        onClick={() => router.push('/hmis')}
         title="HMIS Gateway Online · Standby (No active session lock held)"
         className={cn('h-8 px-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer', className)}
       >

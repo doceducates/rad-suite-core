@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             intent: body.intent || 'login',
             inviteCode: body.inviteCode || undefined,
-            redirect: body.redirect || '/worklist',
+            redirect: body.redirect || '/hmis',
           }),
         });
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const { id, authUrl } = initDesktopAuthRequest({
       intent: body.intent || 'login',
       inviteCode: body.inviteCode || undefined,
-      redirect: body.redirect || '/worklist',
+      redirect: body.redirect || '/hmis',
       customAppUrl: isDesktopOrLocal ? config.centralCloudUrl : reqBaseUrl,
     });
 

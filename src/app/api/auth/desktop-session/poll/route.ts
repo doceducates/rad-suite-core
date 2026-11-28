@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
       success: true,
       status: 'completed',
       user: result.user,
-      targetUrl: result.targetUrl || '/worklist',
+      targetUrl: result.targetUrl || '/hmis',
     });
 
     res.cookies.set(SESSION_COOKIE_NAME, result.sessionToken, {

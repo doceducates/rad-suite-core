@@ -27,7 +27,7 @@ export function GoogleSignInButton({
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isAtlasHost = typeof window !== 'undefined' && window.location.hostname.includes('atlas');
-  const effectiveRedirectUrl = redirectUrl || (isAtlasHost ? '/dashboard' : '/worklist');
+  const effectiveRedirectUrl = redirectUrl || (isAtlasHost ? '/dashboard' : '/hmis');
 
   // Check if running in native desktop environment (Tauri)
   const isDesktop = typeof window !== 'undefined' && Boolean(

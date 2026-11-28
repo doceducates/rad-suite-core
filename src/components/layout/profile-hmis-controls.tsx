@@ -95,7 +95,7 @@ export function ProfileHmisControls({ onCloseMenu }: ProfileHmisControlsProps) {
 
   const handleNavigateHmis = () => {
     onCloseMenu?.();
-    router.push('/worklist');
+    router.push('/hmis');
   };
 
   return (

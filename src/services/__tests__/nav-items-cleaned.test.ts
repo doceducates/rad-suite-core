@@ -11,7 +11,7 @@ describe('Sidebar Navigation Menu Items', () => {
     const ids = NAV_ITEMS.map((item) => item.id);
     expect(ids).toContain('dashboard');
     expect(ids).toContain('my_cases');
-    expect(ids).toContain('worklist');
+    expect(ids).toContain('hmis');
     expect(ids).toContain('pacs');
     expect(ids).toContain('workspace');
     expect(ids).toContain('studio');
@@ -31,8 +31,9 @@ describe('Sidebar Navigation Menu Items', () => {
     expect(workspaceItem?.href).not.toContain('ASGHARI_BB');
   });
 
-  it('should use updated clean clinical labels: Worklist, PACS, and Workspace', () => {
-    expect(['HMIS', 'Worklist']).toContain(NAV_ITEMS.find((item) => item.id === 'worklist')?.label);
+  it('should use updated clean clinical labels: HMIS, PACS, and Workspace', () => {
+    expect(NAV_ITEMS.find((item) => item.id === 'hmis')?.label).toBe('HMIS');
+    expect(NAV_ITEMS.find((item) => item.id === 'hmis')?.href).toBe('/hmis');
     expect(NAV_ITEMS.find((item) => item.id === 'pacs')?.label).toBe('PACS');
     expect(NAV_ITEMS.find((item) => item.id === 'workspace')?.label).toBe('Workspace');
   });

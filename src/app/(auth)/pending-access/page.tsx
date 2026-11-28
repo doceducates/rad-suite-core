@@ -25,7 +25,7 @@ export default function PendingAccessPage() {
           setUserName(data.user.name || '');
           if (data.user.status === 'active') {
             const isAtlas = typeof window !== 'undefined' && window.location.hostname.includes('atlas');
-            router.replace(isAtlas || data.user.role === 'student' ? '/dashboard' : '/worklist');
+            router.replace(isAtlas || data.user.role === 'student' ? '/dashboard' : '/hmis');
           }
         }
       })
@@ -53,7 +53,7 @@ export default function PendingAccessPage() {
       const isAtlas = typeof window !== 'undefined' && window.location.hostname.includes('atlas');
       setSuccessMsg(isAtlas ? 'Student account activated! Launching Atlas...' : 'Account activated successfully! Launching workstation...');
       setTimeout(() => {
-        router.push(isAtlas ? '/dashboard' : '/worklist');
+        router.push(isAtlas ? '/dashboard' : '/hmis');
         router.refresh();
       }, 1200);
     } catch (err: any) {

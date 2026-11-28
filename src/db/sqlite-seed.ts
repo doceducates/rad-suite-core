@@ -81,7 +81,7 @@ export function seedInitialSqliteData(sqlite: any): void {
         'alpha-master-code-2026',
         masterCode,
         'radiologist',
-        JSON.stringify(['my_cases', 'worklist', 'workstation', 'studio']),
+        JSON.stringify(['my_cases', 'hmis', 'workstation', 'studio']),
         9999,
         0,
         null,

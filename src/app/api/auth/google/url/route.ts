@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const proto = req.headers.get('x-forwarded-proto') || url.protocol.replace(':', '') || 'https';
   const reqBaseUrl = host ? `${proto}://${host}` : undefined;
   const isAtlasHost = (host?.toLowerCase().includes('atlas') ?? false) || config.isAtlasMode;
-  const effectiveRedirect = isAtlasHost && (!redirect || redirect === '/worklist' || redirect === '/my-cases') ? '/dashboard' : redirect;
+  const effectiveRedirect = isAtlasHost && (!redirect || redirect === '/hmis' || redirect === '/worklist' || redirect === '/my-cases') ? '/dashboard' : redirect;
 
   const { configured } = getGoogleOAuthCredentials(reqBaseUrl);
   if (!configured) {

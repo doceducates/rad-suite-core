@@ -231,7 +231,7 @@ export function DownloadView({ release }: DownloadViewProps) {
           You can also run the web workstation directly in Google Chrome or Microsoft Edge.
         </p>
         <div className="pt-1">
-          <Link href="/worklist">
+          <Link href="/hmis">
             <Button size="sm" variant="outline" className="text-xs gap-1.5">
               <span>Open Web Workstation</span>
               <ArrowRight className="w-3.5 h-3.5" />

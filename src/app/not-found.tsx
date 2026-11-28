@@ -21,10 +21,10 @@ export default function NotFound() {
         </div>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5 text-xs">
-          <Link href="/worklist" className="w-full sm:w-auto">
+          <Link href="/hmis" className="w-full sm:w-auto">
             <Button variant="primary" size="sm" className="w-full gap-1.5 h-9 font-semibold">
               <FileText className="w-3.5 h-3.5" />
-              <span>Return to HMIS Worklist</span>
+              <span>Return to HMIS</span>
             </Button>
           </Link>
 

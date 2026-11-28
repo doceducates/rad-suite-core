@@ -23,8 +23,8 @@ export default async function AuditPage() {
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           The HIPAA Security Audit Trail is protected and accessible only to System Administrators.
         </p>
-        <Link href="/worklist">
-          <Button size="sm" className="mt-2">Return to Worklist</Button>
+        <Link href="/hmis">
+          <Button size="sm" className="mt-2">Return to HMIS</Button>
         </Link>
       </div>
     );

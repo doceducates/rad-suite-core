@@ -41,9 +41,9 @@ export function DashboardActiveCaseHero({
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-            <Link href="/worklist">
+            <Link href="/hmis">
               <Button size="sm" variant="primary" className="gap-1.5 text-xs font-semibold">
-                <span>Open Worklist</span>
+                <span>Open HMIS</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
