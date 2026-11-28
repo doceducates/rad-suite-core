@@ -1,9 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { NavItemDef } from './nav-items';
+import { LinkPendingSpinner } from '@/components/ui/link-pending-indicator';
+
+const prefetchedRoutes = new Map<string, number>();
+const PREFETCH_COOLDOWN_MS = 60_000;
 
 interface NavItemRowProps {
   item: NavItemDef;
@@ -13,15 +18,27 @@ interface NavItemRowProps {
 
 export function NavItemRow({ item, isActive, collapsed }: NavItemRowProps) {
   const Icon = item.icon;
+  const router = useRouter();
+
+  const handleHoverPrefetch = useCallback(() => {
+    const now = Date.now();
+    const last = prefetchedRoutes.get(item.href) || 0;
+    if (now - last < PREFETCH_COOLDOWN_MS) return;
+    prefetchedRoutes.set(item.href, now);
+    router.prefetch(item.href);
+  }, [item.href, router]);
 
   if (collapsed) {
     return (
       <div className="relative flex justify-center group my-0.5">
         <Link
           href={item.href}
+          prefetch={false}
+          onMouseEnter={handleHoverPrefetch}
+          onFocus={handleHoverPrefetch}
           aria-label={item.label}
           className={cn(
-            'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative',
+            'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative active:scale-95',
             isActive
               ? 'bg-primary/15 text-primary font-semibold shadow-2xs border border-primary/30'
               : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
@@ -31,6 +48,7 @@ export function NavItemRow({ item, isActive, collapsed }: NavItemRowProps) {
             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full shadow-xs" />
           )}
           <Icon className={cn('w-4 h-4 shrink-0 transition-colors', isActive ? 'text-primary' : 'text-secondary group-hover:text-primary')} />
+          <LinkPendingSpinner className="absolute bottom-1 right-1 w-2.5 h-2.5" />
           {item.badge && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface-container-low" />
           )}
@@ -57,8 +75,11 @@ export function NavItemRow({ item, isActive, collapsed }: NavItemRowProps) {
   return (
     <Link
       href={item.href}
+      prefetch={false}
+      onMouseEnter={handleHoverPrefetch}
+      onFocus={handleHoverPrefetch}
       className={cn(
-        'flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all group my-0.5 relative',
+        'flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all group my-0.5 relative active:scale-[0.98]',
         isActive
           ? 'bg-primary/15 text-primary border border-primary/30 font-semibold shadow-2xs'
           : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
@@ -73,6 +94,7 @@ export function NavItemRow({ item, isActive, collapsed }: NavItemRowProps) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0 ml-2">
+        <LinkPendingSpinner />
         {item.badge && (
           <span className={cn(
             'text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold',

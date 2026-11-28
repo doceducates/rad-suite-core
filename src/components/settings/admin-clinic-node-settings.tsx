@@ -71,7 +71,10 @@ export function AdminClinicNodeSettings() {
 
   useEffect(() => {
     fetchTelemetry();
-    const interval = setInterval(() => fetchTelemetry(), 6000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      fetchTelemetry();
+    }, 6000);
     return () => clearInterval(interval);
   }, [fetchTelemetry]);
 

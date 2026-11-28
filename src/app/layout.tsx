@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import './globals.css';
@@ -6,6 +7,7 @@ import { NotificationHost } from '@/components/ui/notification-host';
 import { HmisBatchResultsHost } from '@/components/hmis/hmis-batch-results-modal';
 import { DesktopClientHost } from '@/components/desktop/DesktopClientHost';
 import { ClinicBackgroundHost } from '@/components/clinic-node/clinic-background-host';
+import { NavigationProgress } from '@/components/layout/navigation-progress';
 import { config } from '@/lib/config';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -76,6 +78,9 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning className="antialiased font-body min-h-screen bg-background text-on-surface select-none">
         <ThemeProvider>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           {children}
           <NotificationHost />
           <HmisBatchResultsHost />

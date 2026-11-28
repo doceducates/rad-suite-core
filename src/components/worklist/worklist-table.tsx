@@ -21,6 +21,7 @@ interface WorklistTableProps {
   initialTotal?: number;
   initialStats?: WorklistStats;
   initialRows?: any[]; // legacy compatibility
+  initialUserId?: string;
 }
 
 export function WorklistTable({
@@ -28,6 +29,7 @@ export function WorklistTable({
   initialTotal = 0,
   initialStats,
   initialRows,
+  initialUserId,
 }: WorklistTableProps) {
   const normalizedInitialCases: PacsStudyResult[] =
     initialCases.length > 0 ? initialCases : normalizeLegacyRows(initialRows);
@@ -79,7 +81,7 @@ export function WorklistTable({
     fetchCases,
     autoSyncEnabled,
     setAutoSyncEnabled,
-  } = useWorklistCases(normalizedInitialCases, initialTotal || normalizedInitialCases.length, initialStats) as any;
+  } = useWorklistCases(normalizedInitialCases, initialTotal || normalizedInitialCases.length, initialStats, initialUserId) as any;
 
   const [selectedReportStudy, setSelectedReportStudy] = useState<PacsStudyResult | null>(null);
   const [editingStudy, setEditingStudy] = useState<PacsStudyResult | null>(null);

@@ -143,9 +143,34 @@ export function HospitalPacsClientView({
     }
   }, [filters, currentPage, pageSize]);
 
+  const lastFetchedQueryRef = useRef<string>(
+    new URLSearchParams({
+      page: '1',
+      limit: '25',
+      datePreset: '48h',
+    }).toString()
+  );
+
   useEffect(() => {
+    const currentQuery = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(pageSize),
+      ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
+      ...(filters.searchField !== 'all' ? { searchField: filters.searchField } : {}),
+      ...(filters.modality !== 'all' ? { modality: filters.modality } : {}),
+      ...(filters.region && filters.region !== 'all' ? { region: filters.region } : {}),
+      datePreset: filters.datePreset,
+      ...(filters.customFrom ? { customFrom: filters.customFrom } : {}),
+      ...(filters.customTo ? { customTo: filters.customTo } : {}),
+      ...(filters.location && filters.location !== 'all' ? { location: filters.location } : {}),
+    }).toString();
+
+    if (currentQuery === lastFetchedQueryRef.current) {
+      return;
+    }
+    lastFetchedQueryRef.current = currentQuery;
     fetchStudies(currentPage);
-  }, [fetchStudies, currentPage]);
+  }, [fetchStudies, currentPage, pageSize, filters]);
 
   useEffect(() => {
     const hasActiveTransfers = studies.some((s: any) =>
@@ -153,7 +178,10 @@ export function HospitalPacsClientView({
       s.s3Status === 'downloading' || s.s3Status === 'queued' || s.s3Status === 'retrieving'
     );
     if (!hasActiveTransfers) return;
-    const timer = setInterval(() => fetchStudies(currentPage, true), 4000);
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      fetchStudies(currentPage, true);
+    }, 4000);
     return () => clearInterval(timer);
   }, [studies, fetchStudies, currentPage]);
 

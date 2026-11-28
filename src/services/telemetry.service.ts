@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { clientWorkstations, users, preRegistrations, auditLog } from '@/db/schema';
 import { logAudit } from './audit.service';
 import { getAllClinicNodes } from './clinic-node.service';
+import { serverTtlCache } from '@/lib/server-ttl-cache';
 
 export interface HeartbeatPayload {
   machineId: string;
@@ -92,6 +93,7 @@ export const telemetryService = {
         })
         .where(eq(clientWorkstations.id, existing.id));
 
+      serverTtlCache.invalidate('telemetry:summary');
       return { success: true, id: existing.id };
     }
 
@@ -112,6 +114,7 @@ export const telemetryService = {
       lastSeenAt: nowIso as any,
     });
 
+    serverTtlCache.invalidate('telemetry:summary');
     return { success: true, id: newId };
   },
 
@@ -128,29 +131,45 @@ export const telemetryService = {
         ipAddress: info.ipAddress || '127.0.0.1',
         userAgent: info.userAgent || '',
       });
+      serverTtlCache.invalidate('telemetry:summary');
     } catch (err) {
       console.warn('[TELEMETRY_WARN] Failed recording download audit log:', err);
     }
   },
 
   /**
-   * Fetches high-level telemetry and KPI summary for admin dashboard
+   * Fetches high-level telemetry and KPI summary for admin dashboard (30s TTL cached)
    */
   async getTelemetrySummary(): Promise<TelemetrySummary> {
+    return serverTtlCache.getOrSet('telemetry:summary', 30_000, async () => {
     const now = Date.now();
     const thresholdIso = new Date(now - ONLINE_WINDOW_MS).toISOString();
 
-    // 1. Users metrics
-    const allUsers = await db.select({ status: users.status }).from(users);
-    const userSummary = {
-      total: allUsers.length,
-      active: allUsers.filter((u) => u.status === 'active').length,
-      waitlisted: allUsers.filter((u) => u.status === 'waitlisted').length,
-      pendingInvite: allUsers.filter((u) => u.status === 'pending_invite').length,
-    };
+    // 1. Users metrics (SQL GROUP BY instead of loading all rows)
+    const userGroups = await db
+      .select({
+        status: users.status,
+        count: sql<number>`count(*)`,
+      })
+      .from(users)
+      .groupBy(users.status);
 
-    // 2. Workstation metrics
-    const allWorkstations = await db.select().from(clientWorkstations);
+    const userSummary = { total: 0, active: 0, waitlisted: 0, pendingInvite: 0 };
+    for (const g of userGroups) {
+      const c = Number(g.count || 0);
+      userSummary.total += c;
+      if (g.status === 'active') userSummary.active += c;
+      else if (g.status === 'waitlisted') userSummary.waitlisted += c;
+      else if (g.status === 'pending_invite') userSummary.pendingInvite += c;
+    }
+
+    // 2. Workstation metrics (project only platform + lastSeenAt, omit large metadata blobs)
+    const allWorkstations = await db
+      .select({
+        platform: clientWorkstations.platform,
+        lastSeenAt: clientWorkstations.lastSeenAt,
+      })
+      .from(clientWorkstations);
     const byPlatform: Record<string, number> = {};
     let onlineCount = 0;
 
@@ -173,20 +192,26 @@ export const telemetryService = {
       nodeOnline = nodes.filter((n) => n.status === 'online').length;
     } catch {}
 
-    // 4. Download metrics
+    // 4. Download metrics (SQL aggregate + latest timestamp)
     let downloadCount = 0;
     let lastDownloadAt: string | undefined;
     try {
-      const downloads = await db
-        .select({ timestamp: auditLog.timestamp })
-        .from(auditLog)
-        .where(eq(auditLog.action, 'download_desktop_installer'))
-        .orderBy(desc(auditLog.createdAt))
-        .limit(100);
+      const [countRes, latestRes] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(auditLog)
+          .where(eq(auditLog.action, 'download_desktop_installer')),
+        db
+          .select({ timestamp: auditLog.timestamp })
+          .from(auditLog)
+          .where(eq(auditLog.action, 'download_desktop_installer'))
+          .orderBy(desc(auditLog.createdAt))
+          .limit(1),
+      ]);
 
-      downloadCount = downloads.length;
-      if (downloads.length > 0 && downloads[0].timestamp) {
-        lastDownloadAt = downloads[0].timestamp;
+      downloadCount = Number(countRes[0]?.count || 0);
+      if (latestRes[0]?.timestamp) {
+        lastDownloadAt = latestRes[0].timestamp;
       }
     } catch {}
 
@@ -206,6 +231,7 @@ export const telemetryService = {
         lastDownloadAt,
       },
     };
+    });
   },
 
   /**

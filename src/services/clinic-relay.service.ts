@@ -20,7 +20,11 @@ interface RelayResponse {
 let cachedRelaySessionCookie: string | null = null;
 let cachedSessionExpiry = 0;
 let lastRelayFetchTime = 0;
+let lastRelayFailureTime = 0;
 let lastRelayResult: RelayResponse | null = null;
+
+const RELAY_FAILURE_COOLDOWN_MS = 30_000;
+const RELAY_STATUS_TIMEOUT_MS = 2_500;
 
 export function isRelayApplicable(): boolean {
   if (process.env.NODE_ENV === 'test' && !process.env.ENABLE_CLINIC_RELAY_IN_TEST) {
@@ -90,7 +94,10 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
 
   const { relayUrl: baseUrl, secret } = getEffectiveRelayConfig();
   const now = Date.now();
-  if (!nodeId && lastRelayResult && now - lastRelayFetchTime < 2000) {
+  if (!nodeId && lastRelayResult && now - lastRelayFetchTime < 5000) {
+    return lastRelayResult;
+  }
+  if (lastRelayFailureTime && now - lastRelayFailureTime < RELAY_FAILURE_COOLDOWN_MS) {
     return lastRelayResult;
   }
 
@@ -104,7 +111,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
         'x-clinic-token': secret,
         Authorization: `Bearer ${secret}`,
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(RELAY_STATUS_TIMEOUT_MS),
       cache: 'no-store',
     });
 
@@ -119,6 +126,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
         };
         lastRelayResult = result;
         lastRelayFetchTime = now;
+        lastRelayFailureTime = 0;
         return result;
       }
     }
@@ -138,7 +146,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
     let res = await fetch(`${baseUrl}/api/clinic-node${query}`, {
       method: 'GET',
       headers,
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(RELAY_STATUS_TIMEOUT_MS),
       cache: 'no-store',
     });
 
@@ -149,7 +157,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
         res = await fetch(`${baseUrl}/api/clinic-node${query}`, {
           method: 'GET',
           headers,
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(RELAY_STATUS_TIMEOUT_MS),
           cache: 'no-store',
         });
       }
@@ -166,6 +174,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
         };
         lastRelayResult = result;
         lastRelayFetchTime = now;
+        lastRelayFailureTime = 0;
         return result;
       }
     }
@@ -173,6 +182,7 @@ export async function fetchRelayedClinicStatus(nodeId?: string): Promise<RelayRe
     // Offline or unreachable
   }
 
+  lastRelayFailureTime = Date.now();
   return null;
 }
 
@@ -187,6 +197,7 @@ export async function dispatchRelayedClinicAction(
 
   // Invalidate cached status so next poll reflects change immediately
   lastRelayFetchTime = 0;
+  lastRelayFailureTime = 0;
   lastRelayResult = null;
 
   // 1. Try direct token-authenticated PUT /api/clinic-node/heartbeat

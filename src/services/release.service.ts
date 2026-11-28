@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { serverTtlCache } from '@/lib/server-ttl-cache';
 
 export interface ReleaseInfo {
   version: string;
@@ -67,6 +68,9 @@ export const releaseService = {
    * Resolves the latest release metadata
    */
   getLatestRelease(): ReleaseInfo {
+    const cached = serverTtlCache.get<ReleaseInfo>('release:latest');
+    if (cached) return cached;
+
     try {
       const manifestPath = path.join(process.cwd(), 'public', 'releases', 'latest.json');
       if (fs.existsSync(manifestPath)) {
@@ -113,7 +117,7 @@ export const releaseService = {
           } catch {}
         }
 
-        return {
+        const resolved: ReleaseInfo = {
           version: parsed.version || DEFAULT_RELEASE.version,
           releaseDate: parsed.pub_date ? parsed.pub_date.split('T')[0] : DEFAULT_RELEASE.releaseDate,
           pubDateIso: pubDateRaw,
@@ -128,10 +132,13 @@ export const releaseService = {
           minVersion: parsed.minVersion || DEFAULT_RELEASE.minVersion,
           platforms: parsed.platforms || DEFAULT_RELEASE.platforms,
         };
+        serverTtlCache.set('release:latest', resolved, 60_000);
+        return resolved;
       }
     } catch (err) {
       console.warn('[ReleaseService] Failed to read latest.json from public/releases:', err);
     }
+    serverTtlCache.set('release:latest', DEFAULT_RELEASE, 60_000);
     return DEFAULT_RELEASE;
   },
 

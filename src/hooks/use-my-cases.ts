@@ -46,6 +46,7 @@ export function useMyCases({ initialCases = [], initialTotal = 0 }: UseMyCasesPr
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const isHydratedRef = useRef(false);
+  const isFirstMyCasesFetchRef = useRef(true);
 
   // 1. Hydrate saved filters on client mount (zero PHI/search prefill)
   useEffect(() => {
@@ -171,8 +172,47 @@ export function useMyCases({ initialCases = [], initialTotal = 0 }: UseMyCasesPr
   ]);
 
   useEffect(() => {
+    if (isFirstMyCasesFetchRef.current) {
+      isFirstMyCasesFetchRef.current = false;
+      const isDefaultSsrQuery =
+        dateRange === 'shift' &&
+        !customFrom &&
+        !customTo &&
+        !searchQuery.trim() &&
+        modality === 'all' &&
+        status === 'all' &&
+        priority === 'all' &&
+        department === 'all' &&
+        bodyPart === 'all' &&
+        !imagesReadyOnly &&
+        !showFilmCharges &&
+        sortField === 'date' &&
+        sortDirection === 'desc' &&
+        pageSize === 25 &&
+        currentPage === 1;
+      if (isDefaultSsrQuery) {
+        return;
+      }
+    }
     fetchMyCases();
-  }, [fetchMyCases]);
+  }, [
+    fetchMyCases,
+    dateRange,
+    customFrom,
+    customTo,
+    searchQuery,
+    modality,
+    status,
+    priority,
+    department,
+    bodyPart,
+    imagesReadyOnly,
+    showFilmCharges,
+    sortField,
+    sortDirection,
+    pageSize,
+    currentPage,
+  ]);
 
   const handleToggleSelect = (acc: string) => {
     setSelectedAccessions((prev) => {

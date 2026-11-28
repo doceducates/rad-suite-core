@@ -32,6 +32,7 @@ export default async function HmisPage() {
         initialCases={cases}
         initialTotal={total}
         initialStats={stats}
+        initialUserId={user?.id}
       />
     </div>
   );

@@ -293,10 +293,16 @@ export function runSqliteMigrations(sqlite: any): void {
       CREATE INDEX IF NOT EXISTS idx_studies_assigned ON studies(assigned_radiologist_id);
       CREATE INDEX IF NOT EXISTS idx_studies_scheduled ON studies(scheduled_at);
       CREATE INDEX IF NOT EXISTS idx_studies_claimed_at ON studies(claimed_at);
+      CREATE INDEX IF NOT EXISTS idx_studies_created_at ON studies(created_at);
       CREATE INDEX IF NOT EXISTS idx_studies_status_hmis ON studies(status, hmis_status);
       CREATE INDEX IF NOT EXISTS idx_reports_study_id ON reports(study_id);
       CREATE INDEX IF NOT EXISTS idx_reports_patient_id ON reports(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_reports_status_updated ON reports(status, updated_at);
       CREATE INDEX IF NOT EXISTS idx_patients_mrn ON patients(mrn);
+      CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
+      CREATE INDEX IF NOT EXISTS idx_audit_log_action_created ON audit_log(action, created_at);
+      CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+      CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
     `);
   } catch {}
 }

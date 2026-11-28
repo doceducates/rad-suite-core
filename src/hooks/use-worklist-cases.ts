@@ -33,7 +33,12 @@ export interface WorklistStats {
   filmChargesHiddenCount?: number;
 }
 
-export function useWorklistCases(initialCases: PacsStudyResult[] = [], initialTotal = 0, initialStats?: WorklistStats) {
+export function useWorklistCases(
+  initialCases: PacsStudyResult[] = [],
+  initialTotal = 0,
+  initialStats?: WorklistStats,
+  initialUserId?: string
+) {
   const [cases, setCases] = useState<PacsStudyResult[]>(initialCases);
   const [totalCount, setTotalCount] = useState<number>(initialTotal);
   const [stats, setStats] = useState<WorklistStats | undefined>(initialStats);
@@ -41,7 +46,7 @@ export function useWorklistCases(initialCases: PacsStudyResult[] = [], initialTo
   const [syncingHmis, setSyncingHmis] = useState(false);
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId ?? null);
 
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
@@ -78,13 +83,32 @@ export function useWorklistCases(initialCases: PacsStudyResult[] = [], initialTo
   } = useWorklistCaseActions(setCases, setTotalCount, setUpdatingId, setTrackingId);
 
   const autoSyncedRef = useRef(false);
+  const isFirstFetchEffectRef = useRef(true);
+  const initialDefaultQueryRef = useRef(
+    buildWorklistQueryParams({
+      searchQuery: '',
+      statusFilter: 'all',
+      modalityFilter: 'all',
+      priorityFilter: 'all',
+      sourceFilter: 'all',
+      departmentFilter: 'all',
+      advancedFilters: defaultAdvancedFilters,
+      tabFilter: 'proceeded',
+      sortField: 'date',
+      sortDirection: 'desc',
+      pageSize: 25,
+      currentPage: 1,
+      showFilmCharges: false,
+    }).toString()
+  );
 
   useEffect(() => {
+    if (initialUserId) return;
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => { if (d?.user?.id) setCurrentUserId(d.user.id); })
       .catch(() => {});
-  }, []);
+  }, [initialUserId]);
 
   const handleSort = (field: string) => {
     setSortDirection((prev) => (sortField === field ? (prev === 'asc' ? 'desc' : 'asc') : 'asc'));
@@ -128,9 +152,30 @@ export function useWorklistCases(initialCases: PacsStudyResult[] = [], initialTo
   }, [searchQuery, statusFilter, modalityFilter, priorityFilter, sourceFilter, showFilmCharges, departmentFilter, advancedFilters, tabFilter, pageSize, currentPage, sortField, sortDirection]);
 
   useEffect(() => {
+    if (isFirstFetchEffectRef.current) {
+      isFirstFetchEffectRef.current = false;
+      const currentQuery = buildWorklistQueryParams({
+        searchQuery,
+        statusFilter,
+        modalityFilter,
+        priorityFilter,
+        sourceFilter,
+        departmentFilter,
+        advancedFilters,
+        tabFilter,
+        sortField,
+        sortDirection,
+        pageSize,
+        currentPage,
+        showFilmCharges,
+      }).toString();
+      if (currentQuery === initialDefaultQueryRef.current) {
+        return;
+      }
+    }
     const timer = setTimeout(() => { fetchCases(); }, 250);
     return () => clearTimeout(timer);
-  }, [fetchCases]);
+  }, [fetchCases, searchQuery, statusFilter, modalityFilter, priorityFilter, sourceFilter, departmentFilter, advancedFilters, tabFilter, sortField, sortDirection, pageSize, currentPage, showFilmCharges]);
 
   const handleSyncHmis = useCallback(async (customFilters?: Record<string, any> | unknown) => {
     setSyncingHmis(true);

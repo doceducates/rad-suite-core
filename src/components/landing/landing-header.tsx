@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Stethoscope, Menu, X, Download } from 'lucide-react';
 import { RadSuiteLogo } from '@/components/brand/radsuite-logo';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { LinkPendingIndicator } from '@/components/ui/link-pending-indicator';
 import { cn } from '@/lib/utils';
 
 interface LandingHeaderProps {
@@ -20,8 +22,13 @@ const NAV_LINKS = [
 ];
 
 export function LandingHeader({ user }: LandingHeaderProps) {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const prefetchRoute = useCallback((href: string) => {
+    router.prefetch(href);
+  }, [router]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -48,6 +55,7 @@ export function LandingHeader({ user }: LandingHeaderProps) {
             <Link
               key={link.href}
               href={link.href}
+              prefetch={false}
               className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               {link.label}
@@ -59,28 +67,50 @@ export function LandingHeader({ user }: LandingHeaderProps) {
         <div className="flex items-center gap-2">
           <ThemeToggle />
 
-          <Link href="/download" className="hidden sm:inline-flex">
+          <Link
+            href="/download"
+            prefetch={false}
+            onMouseEnter={() => prefetchRoute('/download')}
+            className="hidden sm:inline-flex"
+          >
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs font-semibold rounded-lg border-primary/40 text-primary hover:bg-primary/10"
+              className="gap-1.5 text-xs font-semibold rounded-lg border-primary/40 text-primary hover:bg-primary/10 active:scale-95 transition-transform"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download</span>
+              <LinkPendingIndicator>
+                <Download className="w-3.5 h-3.5" />
+                <span>Download</span>
+              </LinkPendingIndicator>
             </Button>
           </Link>
 
           {user ? (
-            <Link href="/dashboard">
-              <Button size="sm" className="gap-1.5 text-xs font-semibold rounded-lg">
-                Dashboard <ArrowRight className="w-3.5 h-3.5" />
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              onMouseEnter={() => prefetchRoute('/dashboard')}
+              onFocus={() => prefetchRoute('/dashboard')}
+            >
+              <Button size="sm" className="gap-1.5 text-xs font-semibold rounded-lg active:scale-95 transition-transform">
+                <LinkPendingIndicator>
+                  <span>Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </LinkPendingIndicator>
               </Button>
             </Link>
           ) : (
             <>
-              <Link href="/login" className="hidden sm:inline-flex">
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-                  Sign In
+              <Link
+                href="/login"
+                prefetch={false}
+                onMouseEnter={() => prefetchRoute('/login')}
+                className="hidden sm:inline-flex"
+              >
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground active:scale-95 transition-transform">
+                  <LinkPendingIndicator>
+                    <span>Sign In</span>
+                  </LinkPendingIndicator>
                 </Button>
               </Link>
               <Link href="/#alpha-access" className="hidden sm:inline-flex">

@@ -17,7 +17,7 @@ export async function GET() {
     }
 
     const isAdmin = user.role === 'admin';
-    const summary = await getDashboardSummary(user.id, isAdmin);
+    const summary = await getDashboardSummary(user.id, isAdmin, { includeRelay: true });
     return NextResponse.json({ success: true, data: summary });
   } catch (error) {
     console.error('[DASHBOARD_TELEMETRY_API_ERR]', error);

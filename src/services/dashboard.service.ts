@@ -5,10 +5,11 @@
 
 import { db } from '@/db';
 import { reports, studies, patients, auditLog, hmisDraftVault } from '@/db/schema';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray, sql } from 'drizzle-orm';
 import { getUnifiedWorklist } from '@/services/unified-case.service';
-import { getClinicNodeStatusWithRelay } from '@/services/clinic-node.service';
+import { getClinicNodeStatus, getClinicNodeStatusWithRelay } from '@/services/clinic-node.service';
 import { getPendingCasesWithAnalytics } from './dashboard-pending.service';
+import { serverTtlCache } from '@/lib/server-ttl-cache';
 import { config } from '@/lib/config';
 import type { PacsStudyResult } from '@/types/pacs';
 import type {
@@ -174,114 +175,128 @@ export async function getRecentAuditFeed(limit = 5): Promise<RecentActivityItem[
   }
 }
 
-export async function getDashboardSummary(userId?: string, isAdmin = false): Promise<DashboardSummaryData> {
-  const shift = getShiftInfo();
-
-  // Query unified hospital worklist
-  const { cases, stats } = await getUnifiedWorklist({
-    limit: 50,
-    page: 1,
-    dateRange: 'shift',
-    currentUserId: userId,
-  });
-
-  // Default-Deny RBAC Invariant: Only query infrastructure node telemetry and audit trail for admins
-  const [activeDraft, clinicStatus, pendingData, recentActivity] = await Promise.all([
-    getActiveUserDraft(userId),
-    isAdmin ? getClinicNodeStatusWithRelay().catch(() => ({ isOnline: false })) : Promise.resolve(null),
-    getPendingCasesWithAnalytics(20),
-    isAdmin ? getRecentAuditFeed(5) : Promise.resolve([]),
-  ]);
-
-  // Urgent triage candidates (up to 10 cases)
-  const urgentTriageCases = cases
-    .filter((c) => c.priority === 'stat' || (c.status !== 'final' && c.status !== 'finalized'))
-    .slice(0, 10);
-
-  // Modality mix
-  const modalityDistribution = computeModalityDistribution(cases);
-
-  // Recent completed reports for today's hourly reporting curve
-  let todayReports: { signedAt?: string | null; createdAt?: string }[] = [];
-  try {
-    const rawReports = await db
-      .select({ signedAt: reports.signedAt, createdAt: reports.createdAt })
-      .from(reports)
-      .where(inArray(reports.status, ['final', 'finalized', 'submitted']))
-      .limit(200);
-    todayReports = rawReports.map((r) => ({
-      signedAt: r.signedAt ? (r.signedAt instanceof Date ? r.signedAt.toISOString() : String(r.signedAt)) : null,
-      createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
-    }));
-  } catch {}
-
-  const hourlyReportingCurve = computeHourlyCurve(todayReports);
-
-  // Durable draft vault count
-  let vaultCount = 0;
-  try {
-    const vaultRows = await db.select({ id: hmisDraftVault.id }).from(hmisDraftVault).limit(200);
-    vaultCount = vaultRows.length;
-  } catch {}
-
-  const kpis: DashboardKpiStats = {
-    statPendingCount: stats.statCount || 0,
-    urgentPendingCount: cases.filter((c) => c.priority === 'urgent').length,
-    todayCompletedCount: stats.finalCount || 0,
-    shiftGoalTarget: 25,
-    myDraftsCount: stats.myCount || 0,
-    pgrAwaitingReviewCount: stats.prelimCount || 0,
-    hmisVaultSyncedCount: vaultCount,
-    hmisSyncPercentage: stats.total > 0 ? Math.min(100, Math.round((vaultCount / Math.max(1, stats.total)) * 100)) : 100,
-    unassignedHospitalCount: stats.unassignedCount || 0,
-    totalShiftCases: stats.total || 0,
-    totalPendingHoldCount: pendingData.pendingAnalytics.totalPending,
-  };
-
-  let systemHealth: SystemNodeHealth | null = null;
-
-  if (isAdmin && clinicStatus) {
-    const isClinicOnline =
-      'isOnline' in clinicStatus
-        ? Boolean(clinicStatus.isOnline)
-        : Boolean((clinicStatus as any)?.telemetry?.isOnline);
-
-    systemHealth = {
-      hospitalPacs: {
-        online: isClinicOnline,
-        name: 'Hospital Core PACS (AE: PACS_SRV)',
-        ip: process.env.PACS_HOST ? `${process.env.PACS_HOST}:${process.env.PACS_PORT || 104}` : '127.0.0.1:104',
-        harvestStatus: isClinicOnline ? 'harvesting' : 'offline',
-      },
-      hmisGateway: {
-        online: true,
-        sessionValid: true,
-        draftVaultCount: vaultCount,
-        pendingQueueCount: stats.draftCount || 0,
-      },
-      aiEngine: {
-        online: true,
-        provider: 'Local Llama-Server / MedGemma',
-        model: 'medgemma-4b',
-        port: 8090,
-      },
-      storage: {
-        localHotCacheMb: 1250,
-        s3ArchiveOnline: true,
-      },
-    };
+export async function getDashboardSummary(
+  userId?: string,
+  isAdmin = false,
+  options: { includeRelay?: boolean; skipCache?: boolean } = {}
+): Promise<DashboardSummaryData> {
+  const cacheKey = `dashboard:${userId || 'anon'}:${isAdmin ? '1' : '0'}:${options.includeRelay ? '1' : '0'}`;
+  if (options.skipCache) {
+    serverTtlCache.invalidate(cacheKey);
   }
+  return serverTtlCache.getOrSet(cacheKey, 10_000, async () => {
+    const shift = getShiftInfo();
 
-  return {
-    shift,
-    kpis,
-    activeDraft,
-    urgentTriageCases,
-    pendingQueue: pendingData.pendingQueue,
-    pendingAnalytics: pendingData.pendingAnalytics,
-    modalityDistribution,
-    hourlyReportingCurve,
-    systemHealth,
-    recentActivity,
-  };
+    // Query unified hospital worklist
+    const { cases, stats } = await getUnifiedWorklist({
+      limit: 50,
+      page: 1,
+      dateRange: 'shift',
+      currentUserId: userId,
+    });
+
+    // Default-Deny RBAC Invariant: Only query infrastructure node telemetry and audit trail for admins.
+    // Skip blocking remote relay network calls on initial SSR render; use in-memory node snapshot instead.
+    const clinicNodePromise = isAdmin
+      ? options.includeRelay
+        ? getClinicNodeStatusWithRelay().catch(() => ({ telemetry: getClinicNodeStatus() }))
+        : Promise.resolve({ telemetry: getClinicNodeStatus() })
+      : Promise.resolve(null);
+
+    const [activeDraft, clinicStatus, pendingData, recentActivity] = await Promise.all([
+      getActiveUserDraft(userId),
+      clinicNodePromise,
+      getPendingCasesWithAnalytics(20),
+      isAdmin ? getRecentAuditFeed(5) : Promise.resolve([]),
+    ]);
+
+    // Urgent triage candidates (up to 10 cases)
+    const urgentTriageCases = cases
+      .filter((c) => c.priority === 'stat' || (c.status !== 'final' && c.status !== 'finalized'))
+      .slice(0, 10);
+
+    // Modality mix
+    const modalityDistribution = computeModalityDistribution(cases);
+
+    // Recent completed reports for today's hourly reporting curve + durable vault count
+    let todayReports: { signedAt?: string | null; createdAt?: string }[] = [];
+    let vaultCount = 0;
+    try {
+      const [rawReports, vaultRes] = await Promise.all([
+        db
+          .select({ signedAt: reports.signedAt, createdAt: reports.createdAt })
+          .from(reports)
+          .where(inArray(reports.status, ['final', 'finalized', 'submitted']))
+          .orderBy(desc(reports.updatedAt))
+          .limit(200),
+        db.select({ count: sql<number>`count(*)` }).from(hmisDraftVault),
+      ]);
+      todayReports = rawReports.map((r) => ({
+        signedAt: r.signedAt ? (r.signedAt instanceof Date ? r.signedAt.toISOString() : String(r.signedAt)) : null,
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+      }));
+      vaultCount = Number(vaultRes[0]?.count || 0);
+    } catch {}
+
+    const hourlyReportingCurve = computeHourlyCurve(todayReports);
+
+    const kpis: DashboardKpiStats = {
+      statPendingCount: stats.statCount || 0,
+      urgentPendingCount: cases.filter((c) => c.priority === 'urgent').length,
+      todayCompletedCount: stats.finalCount || 0,
+      shiftGoalTarget: 25,
+      myDraftsCount: stats.myCount || 0,
+      pgrAwaitingReviewCount: stats.prelimCount || 0,
+      hmisVaultSyncedCount: vaultCount,
+      hmisSyncPercentage: stats.total > 0 ? Math.min(100, Math.round((vaultCount / Math.max(1, stats.total)) * 100)) : 100,
+      unassignedHospitalCount: stats.unassignedCount || 0,
+      totalShiftCases: stats.total || 0,
+      totalPendingHoldCount: pendingData.pendingAnalytics.totalPending,
+    };
+
+    let systemHealth: SystemNodeHealth | null = null;
+
+    if (isAdmin && clinicStatus) {
+      const tel = (clinicStatus as any)?.telemetry ?? clinicStatus;
+      const isClinicOnline = Boolean(tel?.online ?? tel?.isOnline);
+
+      systemHealth = {
+        hospitalPacs: {
+          online: isClinicOnline,
+          name: 'Hospital Core PACS (AE: PACS_SRV)',
+          ip: process.env.PACS_HOST ? `${process.env.PACS_HOST}:${process.env.PACS_PORT || 104}` : '127.0.0.1:104',
+          harvestStatus: isClinicOnline ? 'harvesting' : 'offline',
+        },
+        hmisGateway: {
+          online: true,
+          sessionValid: true,
+          draftVaultCount: vaultCount,
+          pendingQueueCount: stats.draftCount || 0,
+        },
+        aiEngine: {
+          online: true,
+          provider: 'Local Llama-Server / MedGemma',
+          model: 'medgemma-4b',
+          port: 8090,
+        },
+        storage: {
+          localHotCacheMb: 1250,
+          s3ArchiveOnline: true,
+        },
+      };
+    }
+
+    return {
+      shift,
+      kpis,
+      activeDraft,
+      urgentTriageCases,
+      pendingQueue: pendingData.pendingQueue,
+      pendingAnalytics: pendingData.pendingAnalytics,
+      modalityDistribution,
+      hourlyReportingCurve,
+      systemHealth,
+      recentActivity,
+    };
+  });
 }

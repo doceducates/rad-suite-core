@@ -1,5 +1,11 @@
 // Layer 2 (Domain/Services): Central Case Registry & Ingestion Service
 import { getLocalCases, getLocalCaseById, LocalCaseStudy } from './local-cases.service';
+
+function shouldScanLocalCases(): boolean {
+  if (process.env.IS_DESKTOP === '1' || process.env.NODE_ENV === 'test') return true;
+  if (process.env.CASES_DIR || process.env.LOCAL_CASES_DIR) return true;
+  return process.platform === 'win32';
+}
 import { getTombstonedAccessions } from './case-deletion.service';
 import { getHospitalPacsStudiesMap } from './hospital-pacs-index.service';
 import { sortStudies } from './study-sorting';
@@ -65,15 +71,17 @@ export async function getUnifiedWorklist(filter: PacsQueryFilter = {}): Promise<
   const allCases: PacsStudyResult[] = [];
   const seenAccessions = new Set<string>();
 
-  // Index local PACS DICOM cases by accession number for O(1) matching
-  const localCasesMap = new Map<string, LocalCaseStudy>();
-  try {
-    for (const c of getLocalCases()) {
-      if (c.accessionNumber) localCasesMap.set(c.accessionNumber.toLowerCase(), c);
-    }
-  } catch {}
-
   const isDicomArchiveView = filter.source === 'local_archive' || filter.source === 'local';
+
+  // Index local PACS DICOM cases only when running on Desktop/local mode or explicitly requested
+  const localCasesMap = new Map<string, LocalCaseStudy>();
+  if (isDicomArchiveView || shouldScanLocalCases()) {
+    try {
+      for (const c of getLocalCases()) {
+        if (c.accessionNumber) localCasesMap.set(c.accessionNumber.toLowerCase(), c);
+      }
+    } catch {}
+  }
 
   if (isDicomArchiveView) {
     // 1. DICOM Archive View (/pacs): Gather all physical DICOM folders from E:\Cases

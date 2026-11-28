@@ -15,6 +15,7 @@ import { DashboardRecentActivity } from './dashboard-recent-activity';
 import { AdminTelemetryBanner } from '@/components/admin/admin-telemetry-banner';
 import { WorklistManualCaseModal } from '@/components/worklist/worklist-manual-case-modal';
 import { notify } from '@/services/notification.service';
+import { clientViewCache } from '@/lib/client-view-cache';
 import type { DashboardSummaryData } from '@/types/dashboard';
 import type { TelemetrySummary } from '@/services/telemetry.service';
 
@@ -35,7 +36,10 @@ export function DashboardView({
 }: DashboardViewProps) {
   const router = useRouter();
   const isAdmin = userRole?.toLowerCase() === 'admin';
-  const [data, setData] = useState<DashboardSummaryData>(initialData);
+  const [data, setData] = useState<DashboardSummaryData>(() => {
+    clientViewCache.set('dashboard:summary', initialData, 30_000);
+    return initialData;
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
@@ -47,6 +51,7 @@ export function DashboardView({
         const json = await res.json();
         if (json.data) {
           setData(json.data);
+          clientViewCache.set('dashboard:summary', json.data, 30_000);
           if (!isSilent) notify.success('Dashboard telemetry updated');
         }
       }
@@ -57,12 +62,31 @@ export function DashboardView({
     }
   }, []);
 
-  // Periodic auto-polling every 60 seconds
+  // Periodic visibility-gated auto-polling every 60 seconds (zero load when tab is hidden)
   useEffect(() => {
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       fetchLatestTelemetry(true);
     }, 60000);
     return () => clearInterval(timer);
+  }, [fetchLatestTelemetry]);
+
+  // Refresh quietly on live SSE mutation events (debounced)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const onMutation = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchLatestTelemetry(true);
+      }, 1000);
+    };
+    window.addEventListener('radsuite:sync-mutation', onMutation);
+    return () => {
+      window.removeEventListener('radsuite:sync-mutation', onMutation);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [fetchLatestTelemetry]);
 
   // Global Ergonomic Hotkeys:

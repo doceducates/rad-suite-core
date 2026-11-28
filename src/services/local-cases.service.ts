@@ -25,6 +25,17 @@ const DEFAULT_CASES_DIR = process.env.CASES_DIR || path.join(process.cwd(), 'cas
 let cachedCases: LocalCaseStudy[] | null = null;
 let lastScanTime = 0;
 let lastScanDir = '';
+let lastDirMtimeSignature = '';
+
+/**
+ * Local DICOM disk scanning is only applicable on Desktop workstations or when
+ * an explicit CASES_DIR / LOCAL_CASES_DIR is configured (never on Linux cloud VPS).
+ */
+export function isLocalCasesEnabled(): boolean {
+  if (process.env.IS_DESKTOP === '1' || process.env.NODE_ENV === 'test') return true;
+  if (process.env.CASES_DIR || process.env.LOCAL_CASES_DIR) return true;
+  return process.platform === 'win32';
+}
 
 // Dynamic runtime FS access to prevent Next.js / Turbopack NFT from tracing external drive paths during build
 const getRuntimeFs = (): typeof fs => (typeof window === 'undefined' ? eval("require('fs')") : fs);
@@ -43,6 +54,10 @@ export function formatDicomDate(dateStr?: string, timeStr?: string, fallback?: D
 }
 
 export function getLocalCases(forceRefresh = false, customDir?: string): LocalCaseStudy[] {
+  if (!customDir && !isLocalCasesEnabled()) {
+    return [];
+  }
+
   const rfs = getRuntimeFs();
   const targetDirs: string[] = [];
   if (customDir) {
@@ -51,10 +66,14 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
     const candidates = [
       process.env.CASES_DIR,
       process.env.LOCAL_CASES_DIR,
-      'C:/MedicalSandbox/Cases',
-      'C:/Users/muham/Downloads/cases/My_Cases',
-      'C:/Users/muham/Downloads/cases',
-      'E:/Cases',
+      ...(process.platform === 'win32'
+        ? [
+            'C:/MedicalSandbox/Cases',
+            'C:/Users/muham/Downloads/cases/My_Cases',
+            'C:/Users/muham/Downloads/cases',
+            'E:/Cases',
+          ]
+        : []),
       DEFAULT_CASES_DIR,
     ].filter(Boolean) as string[];
     for (const d of candidates) {
@@ -64,7 +83,23 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
   if (targetDirs.length === 0) return [];
 
   const cacheKey = targetDirs.join(';');
-  if (!forceRefresh && cachedCases && cacheKey === lastScanDir && Date.now() - lastScanTime < 15000) {
+  const dirMtimeSignature = targetDirs
+    .map((d) => {
+      try {
+        return `${d}:${Math.floor(rfs.statSync(d).mtimeMs)}`;
+      } catch {
+        return `${d}:0`;
+      }
+    })
+    .join('|');
+
+  // Serve cached scan if directory mtime hasn't changed or within 45s TTL
+  if (
+    !forceRefresh &&
+    cachedCases &&
+    cacheKey === lastScanDir &&
+    (dirMtimeSignature === lastDirMtimeSignature || Date.now() - lastScanTime < 45000)
+  ) {
     return cachedCases;
   }
 
@@ -282,6 +317,7 @@ export function getLocalCases(forceRefresh = false, customDir?: string): LocalCa
   cachedCases = deduplicated;
   lastScanTime = Date.now();
   lastScanDir = cacheKey;
+  lastDirMtimeSignature = dirMtimeSignature;
   return deduplicated;
 }
 

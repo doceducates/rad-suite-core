@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { cache } from 'react';
 import { eq, and, gt, sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { db, IS_SQLITE } from '@/db';
@@ -122,7 +123,7 @@ export async function verifySession(token: string): Promise<{ user: User } | nul
   return null;
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+const resolveCurrentUser = async (): Promise<User | null> => {
   let isRequestContext = false;
   let token: string | undefined;
   try {
@@ -157,7 +158,14 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 
   return null;
-}
+};
+
+/**
+ * Request-scoped deduplication via React.cache() so RootLayout, DashboardLayout,
+ * and nested Server Components share a single SQLite/Postgres session lookup.
+ */
+export const getCurrentUser: () => Promise<User | null> =
+  typeof cache === 'function' ? cache(resolveCurrentUser) : resolveCurrentUser;
 
 export async function getUserById(id: string): Promise<User | null> {
   try {
