@@ -235,7 +235,7 @@ jobs:
           chmod +x src-tauri/gen/android/gradlew || true
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           export NDK_HOME="${NDK_HOME:-$ANDROID_HOME/ndk/27.0.12077973}"
-          npx @tauri-apps/cli android build --apk --target aarch64 || (cd src-tauri/gen/android && ./gradlew assembleArm64Debug)
+          npx @tauri-apps/cli android build --apk --target aarch64 --config src-tauri/tauri.android.conf.json || (cd src-tauri/gen/android && ./gradlew assembleArm64Debug)
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
@@ -254,7 +254,7 @@ jobs:
       always() &&
       needs.validate-core.result == 'success' &&
       (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || needs.auto-bump.result == 'success')
-    runs-on: macos-14
+    runs-on: macos-latest
     continue-on-error: true
     steps:
       - name: Checkout Code
@@ -275,8 +275,19 @@ jobs:
       - name: Install Project Dependencies
         run: npm install --legacy-peer-deps --ignore-scripts
 
-      - name: Prepare Desktop Bootstrap
+      - name: Prepare Desktop Bootstrap & Next.js Standalone
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_URL: https://radiology.sehatai.org
+          BUILD_TARGET: desktop
         run: |
+          npm run build
+          rm -rf src-tauri/resources/standalone
+          mkdir -p src-tauri/resources/standalone/.next
+          cp -R .next/standalone/. src-tauri/resources/standalone/
+          cp -R .next/static src-tauri/resources/standalone/.next/static
+          cp -R public src-tauri/resources/standalone/public
+          cp "$(which node)" src-tauri/resources/standalone/node
           mkdir -p out
           if [ ! -f out/index.html ]; then
             echo '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Rad Suite Workstation</title><meta http-equiv="refresh" content="0; url=http://localhost:3780/desktop"/></head><body style="background:#070d19;color:#38bdf8;display:flex;align-items:center;justify-content:center;height:100vh;"><h3>Initializing Rad Suite Viewport...</h3></body></html>' > out/index.html
@@ -327,8 +338,19 @@ jobs:
       - name: Install Project Dependencies
         run: npm install --legacy-peer-deps --ignore-scripts
 
-      - name: Prepare Desktop Bootstrap
+      - name: Prepare Desktop Bootstrap & Next.js Standalone
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_URL: https://radiology.sehatai.org
+          BUILD_TARGET: desktop
         run: |
+          npm run build
+          rm -rf src-tauri/resources/standalone
+          mkdir -p src-tauri/resources/standalone/.next
+          cp -R .next/standalone/. src-tauri/resources/standalone/
+          cp -R .next/static src-tauri/resources/standalone/.next/static
+          cp -R public src-tauri/resources/standalone/public
+          cp "$(which node)" src-tauri/resources/standalone/node
           mkdir -p out
           if [ ! -f out/index.html ]; then
             echo '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Rad Suite Workstation</title><meta http-equiv="refresh" content="0; url=http://localhost:3780/desktop"/></head><body style="background:#070d19;color:#38bdf8;display:flex;align-items:center;justify-content:center;height:100vh;"><h3>Initializing Rad Suite Viewport...</h3></body></html>' > out/index.html
